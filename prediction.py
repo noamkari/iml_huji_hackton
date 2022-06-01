@@ -2,20 +2,13 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.model_selection import train_test_split
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 from sklearn.tree import DecisionTreeClassifier
 
 
-def find_in_str(s, words):
-    if type(s) != str:
-        return False
-    for w in words:
-        if s.find(w) != -1:
-            return True
-    return False
-
 def load_data(filename: str):
     """
-    Load  datasetvi
+    Load  dataset
     Parameters
     ----------
     filename: str
@@ -28,30 +21,13 @@ def load_data(filename: str):
     3) Tuple of ndarray of shape (n_samples, n_features) and ndarray of shape (n_samples,)
     """
     # TODO - replace below code with any desired preprocessing
-    full_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
-    full_data.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
-
-
-    #Her2 preprocessing
-    set_pos = {"po", "PO", "Po", "2", "3","+","חיובי",'בינוני', "Inter","Indeter","indeter", "inter"}
-    set_neg = {"ne","Ne","NE", "eg","no","0","1","-","שלילי"}
-    full_data["Her2"] = full_data["Her2"].astype(str)
-    full_data["Her2"] = full_data["Her2"].apply(lambda x: 1 if find_in_str(x, set_pos) else x)
-    full_data["Her2"] = full_data["Her2"].apply(lambda x: 0 if find_in_str(x, set_neg) else x)
-    full_data["Her2"] = full_data["Her2"].apply(lambda x: 0 if type(x)==str else x)
-    #Age  preprocessing
-    full_data = full_data[0 < full_data["age"] < 120]
-    #Basic stage  preprocessing
-    full_data["Basic stage"] = full_data["Basic stage"].replace({ 'Null':0, 'c - Clinical':1,'p - Pathological':2, 'r - Reccurent':3})
-
-
-
-
-    for feature in full_data.columns:
-        print(feature)
-    for feature in full_data.columns:
-        print(feature)
-        print(full_data[feature].unique())
+    full_data = pd.read_csv(filename).dropna().drop_duplicates()
+    features = full_data[["h_booking_id",
+                          "hotel_id",
+                          "accommadation_type_name",
+                          "hotel_star_rating",
+                          "customer_nationality"]]
+    labels = full_data["cancellation_datetime"]
 
     return features, labels
 
@@ -74,24 +50,84 @@ def evaluate_and_export(estimator, X: np.ndarray, filename: str):
                  columns=["predicted_values"]).to_csv(filename, index=False)
 
 
+def feature_evaluation(X: pd.DataFrame, y: pd.Series,
+                       output_path: str = "."):
+    """
+    Create scatter plot between each feature and the response.
+        - Plot title specifies feature name
+        - Plot title specifies Pearson Correlation between feature and response
+        - Plot saved under given folder with file name including feature name
+    Parameters
+    ----------
+    X : DataFrame of shape (n_samples, n_features)
+        Design matrix of regression problem
+
+    y : array-like of shape (n_samples, )
+        Response vector to evaluate against
+
+    output_path: str (default ".")
+        Path to folder in which plots are saved
+    """
+
+    y_axis = []
+    x_axis = X.columns
+
+    # fixme not good
+    y_np = y.to_numpy()
+    y_np = y_np.ravel()
+
+    for i, feature in enumerate(X.columns):
+        y_axis.append(
+            np.cov(X[feature], y)[0, 1] / (np.std(X[feature]) * np.std(y)))
+
+    for i, feature in enumerate(X):
+        create_scatter_for_feature(X[feature], y_np, round(y_axis[i], 3),
+                                   feature,
+                                   output_path)
+
+
+def create_scatter_for_feature(X_feature: pd.DataFrame, prices, title,
+                               feature_name: str, output_path: str):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=X_feature, y=prices, mode="markers"))
+    fig.update_layout(title="Pirson: " + str(title),
+                      xaxis_title=feature_name,
+                      yaxis_title="price")
+
+    fig.show()
+    # fig.write_image(output_path + feature_name+".png")
+
+
+def preprocess(df):
+    df = df.rename(
+        columns={" Hospital": "Hospital", " Form Name": "Form Name"})
+
+    X = pd.concat(
+        [pd.get_dummies(df["Hospital"], columns="Hospital"),
+         pd.get_dummies(df["Form Name"], columns="Form Name"),
+         df], axis=1)
+    print(X)
+
+    return X
+
+
 if __name__ == '__main__':
     np.random.seed(0)
-    full_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv", )
-    train_labels_0 = pd.read_csv("./Mission 2 - Breast Cancer/train.labels.0.csv")
-    train_labels_1 = pd.read_csv("./Mission 2 - Breast Cancer/train.labels.1.csv")
 
     # Load data and preprocess
-    X, y = load_data("./Mission 2 - Breast Cancer/train.feats.csv")
-    train_X, test_X, train_y, test_y = train_test_split(X, y)
+    df = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
+    df.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
 
-    # Fit model over data
-    estimator = AdaBoostClassifier(
-        base_estimator=DecisionTreeClassifier(random_state=0),
-        n_estimators=100,
-        random_state=0)
-    estimator.fit(train_X, train_y)
+    y_tumor = pd.read_csv("./Mission 2 - Breast Cancer/train.labels.1.csv")
+    y_tumor.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
 
-    # Store model predictions over test set
-    evaluate_and_export(estimator, test_X, "predictions.csv")
+    for feature in df.columns:
+        print(feature)
+        print(df[feature].unique().size)
 
+    print(set(df["Histological diagnosis"]))
+
+    X = preprocess(df)
+
+    # feature_evaluation(X, y_tumor, "")
     print("this is me")

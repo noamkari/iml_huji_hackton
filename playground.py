@@ -20,8 +20,8 @@ if __name__ == '__main__':
                   [2, 20, 200],
                   [3, 30, 300]])
     b = np.zeros((4, 2))
-    print(np.apply_along_axis(lambda x: x + x[0], 1, a))
-
+    s = [1, 10, 100]
+    print(np.apply_along_axis(lambda x: 0 if x in s else 0, 1, a))
     b[0][0] = 1
     b[1][1] = 2
     print(np.sum(b))
