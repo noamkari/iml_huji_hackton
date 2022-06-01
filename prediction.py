@@ -7,7 +7,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 def load_data(filename: str):
     """
-    Load  dataset
+    Load  datasetvi
     Parameters
     ----------
     filename: str
