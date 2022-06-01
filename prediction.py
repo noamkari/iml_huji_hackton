@@ -5,6 +5,14 @@ import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 
 
+def find_in_str(s, words):
+    if type(s) != str:
+        return False
+    for w in words:
+        if s.find(w) != -1:
+            return True
+    return False
+
 def load_data(filename: str):
     """
     Load  datasetvi
@@ -20,13 +28,30 @@ def load_data(filename: str):
     3) Tuple of ndarray of shape (n_samples, n_features) and ndarray of shape (n_samples,)
     """
     # TODO - replace below code with any desired preprocessing
-    full_data = pd.read_csv(filename).dropna().drop_duplicates()
-    features = full_data[["h_booking_id",
-                          "hotel_id",
-                          "accommadation_type_name",
-                          "hotel_star_rating",
-                          "customer_nationality"]]
-    labels = full_data["cancellation_datetime"]
+    full_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
+    full_data.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
+
+
+    #Her2 preprocessing
+    set_pos = {"po", "PO", "Po", "2", "3","+","חיובי",'בינוני', "Inter","Indeter","indeter", "inter"}
+    set_neg = {"ne","Ne","NE", "eg","no","0","1","-","שלילי"}
+    full_data["Her2"] = full_data["Her2"].astype(str)
+    full_data["Her2"] = full_data["Her2"].apply(lambda x: 1 if find_in_str(x, set_pos) else x)
+    full_data["Her2"] = full_data["Her2"].apply(lambda x: 0 if find_in_str(x, set_neg) else x)
+    full_data["Her2"] = full_data["Her2"].apply(lambda x: 0 if type(x)==str else x)
+    #Age  preprocessing
+    full_data = full_data[0 < full_data["age"] < 120]
+    #Basic stage  preprocessing
+    full_data["Basic stage"] = full_data["Basic stage"].replace({ 'Null':0, 'c - Clinical':1,'p - Pathological':2, 'r - Reccurent':3})
+
+
+
+
+    for feature in full_data.columns:
+        print(feature)
+    for feature in full_data.columns:
+        print(feature)
+        print(full_data[feature].unique())
 
     return features, labels
 
@@ -51,10 +76,12 @@ def evaluate_and_export(estimator, X: np.ndarray, filename: str):
 
 if __name__ == '__main__':
     np.random.seed(0)
+    full_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv", )
+    train_labels_0 = pd.read_csv("./Mission 2 - Breast Cancer/train.labels.0.csv")
+    train_labels_1 = pd.read_csv("./Mission 2 - Breast Cancer/train.labels.1.csv")
 
     # Load data and preprocess
-    full_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
-    X, y = load_data("test.csv")
+    X, y = load_data("./Mission 2 - Breast Cancer/train.feats.csv")
     train_X, test_X, train_y, test_y = train_test_split(X, y)
 
     # Fit model over data
