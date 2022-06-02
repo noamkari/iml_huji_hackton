@@ -95,7 +95,7 @@ def create_scatter_for_feature(X: pd.DataFrame, y: np.array, title,
                       xaxis_title=feature_name,
                       yaxis_title="y")
 
-    fig.show()
+    # fig.show()
 
 
 def is_in_str(s: str, words: set):
@@ -107,7 +107,32 @@ def is_in_str(s: str, words: set):
     return False
 
 
+from datetime import date
+from datetime import datetime
+
+
+def proces_time(x):
+    today = datetime.strptime("6/2/2022", '%d/%m/%Y')
+    print(type(x))
+    x = datetime.strptime(x[:10], '%d/%m/%Y')
+    print(type(x))
+    print(type((x - today).days))
+
+
+def how_much(x, d: dict):
+    if x in d:
+        d[x] += 1
+    else:
+        d[x] = 0
+
+
 def preprocess(df: pd.DataFrame):
+    # cur_date
+
+    today = datetime.strptime("6/2/2022", '%d/%m/%Y')
+    df["Diagnosis date"] = df["Diagnosis date"].apply(
+        lambda x: (datetime.strptime(x[:10], '%d/%m/%Y') - today).days)
+
     # make categorical from Hospital and Form Name
     X = pd.get_dummies(df, columns=[" Hospital", " Form Name"])
 
@@ -128,10 +153,16 @@ def preprocess(df: pd.DataFrame):
     # Age  preprocessing FIXME buggy, chek what need to do (remove line, get mean)
     # X = X[0 < X["Age"] < 120]
 
-    # Basic stage  preprocessing
+    # Basic stage preprocessing
     X["Basic stage"] = X["Basic stage"].replace(
         {'Null': 0, 'c - Clinical': 1, 'p - Pathological': 2,
          'r - Reccurent': 3})
+
+    # margin type
+    margin_neg = {'נקיים', 'ללא'}
+    margin_pos = {'נגועים'}
+    X["Margin Type"] = X["Margin Type"].apply(
+        lambda x: 1 if is_in_str(x, margin_pos) else 0)
 
     return X
 
@@ -154,6 +185,8 @@ if __name__ == '__main__':
     data_path, y_location_of_distal, y_tumor_path = sys.argv[1:]
 
     original_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
+
+    # remove heb prefix
     original_data.rename(columns=lambda x: x.replace('אבחנה-', ''),
                          inplace=True)
 
@@ -163,7 +196,10 @@ if __name__ == '__main__':
     print({f: original_data[f].unique().size for f in original_data.columns})
     print(set(original_data["Histological diagnosis"]))
 
-    X = preprocess(original_data)
+    d = {}
+    original_data["Histological diagnosis"].apply(lambda x: how_much(x, d))
+    print(d)
 
+    X = preprocess(original_data)
     feature_evaluation(X[["Age", "Her2", "Basic stage"]], y_tumor)
     print("this is me")
