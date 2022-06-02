@@ -9,6 +9,9 @@ import plotly.graph_objects as go
 from datetime import datetime
 from sklearn.tree import DecisionTreeClassifier
 
+positive_sign = ['extensive', 'yes', '(+)', 'ye', 'Ye', 'po', 'PO', 'Po', 'os']
+negative_sign = ['No', '(-)', 'NO', 'no', 'NE','Ne', 'ne','eg', "שלילי" ]
+indeterminate_sign = ['בינוני', "Inter", "Indeter", "indeter", "inter"]
 
 def evaluate_and_export(estimator, X: np.ndarray, filename: str):
     """
@@ -72,7 +75,10 @@ def create_scatter_for_feature(X: pd.DataFrame, y: np.array, title,
     # fig.show()
 
 
-def her_2_pre(x, pos_lst, neg_lst):
+def her_2_pre(x):
+    global positive_sign, negative_sign, indeterminate_sign
+    pos_lst = positive_sign + indeterminate_sign +  ["2,3", "+"]
+    neg_lst = negative_sign + ["0", "1", "-"]
     x = str(x)
     for p in pos_lst:
         if p in x:
@@ -150,9 +156,9 @@ def Lymphatic_penetration_pre(x):
 
 def Lymphovascular_invasion_pre(x):
     x = str(x)
-
-    lst_of_pos = ['+', 'extensive', 'yes', '(+)', 'ye', 'Ye', 'pos']
-    lst_of_neg = ['-', 'No', '(-)', 'NO', 'neg', 'no']
+    global positive_sign, negative_sign, indeterminate_sign
+    lst_of_pos = positive_sign +["+"]
+    lst_of_neg = negative_sign +["-"]
     very_danger = 'MICROPAPILLARY VARIANT'
 
     if x == very_danger:
@@ -221,16 +227,7 @@ def preprocess(df: pd.DataFrame):
         lambda x: (datetime.strptime(x[:10], '%d/%m/%Y') - today).days * -1)
 
     # Her2 preprocessing
-    df["Her2"] = df["Her2"].apply(lambda x: her_2_pre(x,
-                                                      ["po", "PO", "Po", "os",
-                                                       "2", "3", "+", "חיובי",
-                                                       'בינוני', "Inter",
-                                                       "Indeter", "indeter",
-                                                       "inter"],
-                                                      ["ne", "Ne",
-                                                       "NE", "eg",
-                                                       "no", "0", "1",
-                                                       "-", "שלילי"]))
+    df["Her2"] = df["Her2"].apply(lambda x: her_2_pre(x))
 
     # M -metastases mark (TNM)
     df["M -metastases mark (TNM)"] = df["M -metastases mark (TNM)"].apply(
@@ -293,14 +290,11 @@ if __name__ == '__main__':
     y_tumor = pd.read_csv("./Mission 2 - Breast Cancer/train.labels.1.csv")
     y_tumor.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
 
-    for f in original_data.columns:
-        print(f)
-
     print({f: original_data[f].unique().size for f in original_data.columns})
     print()
 
     d = {}
-    original_data["T -Tumor mark (TNM)"].apply(
+    original_data["er"].apply(
         lambda x: how_much_per_unique(x, d))
     print(d)
 
