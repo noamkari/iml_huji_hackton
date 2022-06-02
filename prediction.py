@@ -72,7 +72,6 @@ def create_scatter_for_feature(X: pd.DataFrame, y: np.array, title,
     # fig.show()
 
 
-
 def her_2_pre(x, pos_lst, neg_lst):
     x = str(x)
     for p in pos_lst:
@@ -84,6 +83,7 @@ def her_2_pre(x, pos_lst, neg_lst):
             return "neg"
 
     return "null"
+
 
 def KI67_score(x):
     if (0 < x <= 5):
@@ -181,22 +181,25 @@ def find_score(x: str):
                     return 1
     return None
 
+
 def metastases_mark_pre(x):
-    d = {"M1" :"1", "M1a" :"1","M1b" :"1", "M0" :"0"}
+    d = {"M1": "1", "M1a": "1", "M1b": "1", "M0": "0"}
     if x in d:
         return d[x]
     else:
         return "null"
 
+
 def Tumor_mark_pre(x):
     d = {'T2': 2, 'T4': 4, 'T1c': 1, 'T1b': 1, 'MF': 0,
-     'T1': 1, 'Tis': 1061, 'T1mic': 1, 'Tx': 0, 'T3': 3, 'T1a': 1,
-     'Not yet Established': 0, 'T0': 0, 'T3c': 3, 'T2a': 2, 'T4d': 4,
-     'T4c': 4, 'T4a': 4, 'T3b': 3, 'T2b': 2, 'T4b': 4, 'T3d': 3}
+         'T1': 1, 'Tis': 1061, 'T1mic': 1, 'Tx': 0, 'T3': 3, 'T1a': 1,
+         'Not yet Established': 0, 'T0': 0, 'T3c': 3, 'T2a': 2, 'T4d': 4,
+         'T4c': 4, 'T4a': 4, 'T3b': 3, 'T2b': 2, 'T4b': 4, 'T3d': 3}
     if x in d:
         return d[x]
     else:
         return 0
+
 
 def preprocess(df: pd.DataFrame):
     # Histological diagnosis
@@ -229,6 +232,10 @@ def preprocess(df: pd.DataFrame):
                                                        "no", "0", "1",
                                                        "-", "שלילי"]))
 
+    # M -metastases mark (TNM)
+    df["M -metastases mark (TNM)"] = df["M -metastases mark (TNM)"].apply(
+        lambda x: metastases_mark_pre(x))
+
     # make categorical
     X = pd.get_dummies(df, columns=[" Hospital",
                                     " Form Name",
@@ -237,7 +244,6 @@ def preprocess(df: pd.DataFrame):
                                     "Histological diagnosis",
                                     "M -metastases mark (TNM)",
                                     "Her2"])
-
     # Age  preprocessing
     X = X[X["Age"] < 120]
     X = X[0 < X["Age"]]
@@ -250,32 +256,24 @@ def preprocess(df: pd.DataFrame):
     # KI67 protein preprocessing
     # print(sum(X["KI67 protein"].apply(lambda x: 1 if validate(x) else 0)))
     X["KI67 protein"] = X["KI67 protein"].astype(str)
-
-    whitelist = ['-', ' ', '=']
     X["KI67 protein"] = X["KI67 protein"].apply(
         lambda x: KI67_score(KI67_pre(x)))
-
 
     # margin type
     margin_neg = ['נקיים', 'ללא']
     margin_pos = ['נגועים']
-    X["Margin Type"] = X["Margin Type"].apply(lambda x: 1 if Her2_pre(x, margin_pos) else 0)
+    X["Margin Type"] = X["Margin Type"].apply(
+        lambda x: 1 if x in margin_pos else 0)
 
-
-    #M -metastases mark (TNM)
-    X["M -metastases mark (TNM)"] = X["M -metastases mark (TNM)"].apply(
-      lambda x:  metastases_mark_pre(x))
-
-    #Nodes exam pre_processing
+    # Nodes exam pre_processing
     X["Nodes exam"] = X["Nodes exam"].fillna(0)
 
-    #Positive nodes
+    # Positive nodes
     X["Positive nodes"] = X["Positive nodes"].fillna(0)
 
-    #T -Tumor mark (TNM)
-    X["T -Tumor mark (TNM)"] = X["T -Tumor mark (TNM)"].apply(lambda x:
-        Tumor_mark_pre(x))
-
+    # T -Tumor mark (TNM)
+    X["T -Tumor mark (TNM)"] = X["T -Tumor mark (TNM)"].apply(
+        lambda x: Tumor_mark_pre(x))
 
     return X
 
