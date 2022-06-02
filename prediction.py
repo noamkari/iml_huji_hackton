@@ -9,8 +9,10 @@ import plotly.graph_objects as go
 from datetime import datetime
 from sklearn.tree import DecisionTreeClassifier
 
-positive_sign = ['extensive', 'yes', '(+)', 'ye', 'Ye', 'po', 'PO', 'Po', 'os', 'high', 'High', 'HIGH', '100']
-negative_sign = ['No', '(-)', 'NO', 'no', 'NE','Ne', 'ne','eg','ng','Ng','NG', "שלילי", 'Low', 'low', 'LOW' ]
+positive_sign = ['extensive', 'yes', '(+)', 'ye', 'Ye', 'po', 'PO', 'Po', 'os',
+                 'high', 'High', 'HIGH', '100']
+negative_sign = ['No', '(-)', 'NO', 'no', 'NE', 'Ne', 'ne', 'eg', 'ng', 'Ng',
+                 'NG', "שלילי", 'Low', 'low', 'LOW']
 indeterminate_sign = ['בינוני', "Inter", "Indeter", "indeter", "inter"]
 
 
@@ -249,7 +251,6 @@ def lymph_nodes_mark_pre(x):
     return "null"
 
 
-
 def preprocess(df: pd.DataFrame):
     # Histological diagnosis
     df["Histological diagnosis"] = df["Histological diagnosis"].apply(
@@ -264,10 +265,31 @@ def preprocess(df: pd.DataFrame):
     df["Lymphatic penetration"] = df["Lymphatic penetration"].apply(
         lambda x: Lymphatic_penetration_pre(x))
 
+    df = df.groupby("Diagnosis date").agg({
+        ' Form Name': ', '.join,
+        ' Hospital': 'first', 'Age': 'first', 'Basic stage': 'first',
+        'Her2': 'first', 'Histological diagnosis': 'first',
+        'Histopatological degree': 'first',
+        'Ivi -Lymphovascular invasion': 'first', 'KI67 protein': 'first',
+        'Lymphatic penetration': 'first',
+        'M -metastases mark (TNM)': 'first', 'Margin Type': 'first',
+        'N -lymph nodes mark (TNM)': 'first',
+        'Nodes exam': 'first', 'Positive nodes': 'first', 'Side': 'first',
+        'Stage': 'first', 'Surgery date1': 'first',
+        'Surgery date2': 'first', 'Surgery date3': 'first',
+        'Surgery name1': 'first', 'Surgery name2': 'first',
+        'Surgery name3': 'first', 'Surgery sum': 'first',
+        'T -Tumor mark (TNM)': 'first', 'Tumor depth': 'first',
+        'Tumor width': 'first', 'er': 'first', 'pr': 'first',
+        'surgery before or after-Activity date': 'first',
+        'surgery before or after-Actual activity': 'first',
+        'id-hushed_internalpatientid': 'first'
+    }).reset_index()
     # cur_date
     today = datetime.strptime("6/2/2022", '%d/%m/%Y')
     df["Diagnosis date"] = df["Diagnosis date"].apply(
         lambda x: (datetime.strptime(x[:10], '%d/%m/%Y') - today).days * -1)
+
 
     # Her2 preprocessing
     df["Her2"] = df["Her2"].apply(lambda x: her_2_pre(x))
@@ -347,18 +369,17 @@ def preprocess(df: pd.DataFrame):
     X["Tumor width"] = X["Tumor width"].fillna(0)
     X["Surgery sum"] = X["Surgery sum"].fillna(0)
 
-
     for f in X.columns:
         if (sum(X[f].isnull())):
             print(f)
     X.drop(
         [
-         'User Name', 'Surgery date1', 'Surgery date2',
-         'Surgery date3', 'Surgery name1', 'Surgery name2', 'Surgery name3',
-         'Surgery sum', 'surgery before or after-Activity date',
-         'surgery before or after-Actual activity',
-         'id-hushed_internalpatientid'], axis=1, inplace=True)
-    #N -lymph nodes mark (TNM)
+            'Surgery date1', 'Surgery date2',
+            'Surgery date3', 'Surgery name1', 'Surgery name2', 'Surgery name3',
+            'Surgery sum', 'surgery before or after-Activity date',
+            'surgery before or after-Actual activity',
+            'id-hushed_internalpatientid'], axis=1, inplace=True)
+    # N -lymph nodes mark (TNM)
 
     return X
 
@@ -390,7 +411,6 @@ if __name__ == '__main__':
     original_data["surgery before or after-Actual activity"].apply(
         lambda x: how_much_per_unique(x, d))
     print(d)
-
     X = preprocess(original_data)
 
     # feature_evaluation(X[["Age", "Her2", "Basic stage"]], y_tumor)
