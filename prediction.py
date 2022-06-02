@@ -72,7 +72,7 @@ def create_scatter_for_feature(X: pd.DataFrame, y: np.array, title,
     # fig.show()
 
 
-def is_in_str(s: str, words: set):
+def Her2_pre(s: str, words: set):
     if type(s) != str:
         return False
     for w in words:
@@ -144,6 +144,22 @@ def find_score(x: str):
                     return 1
     return None
 
+def metastases_mark_pre(x):
+    d = {"M1" :"1", "M1a" :"1","M1b" :"1", "M0" :"0"}
+    if x in d:
+        return d[x]
+    else:
+        return "null"
+
+def Tumor_mark_pre(x):
+    d = {'T2': 2, 'T4': 4, 'T1c': 1, 'T1b': 1, 'MF': 0,
+     'T1': 1, 'Tis': 1061, 'T1mic': 1, 'Tx': 0, 'T3': 3, 'T1a': 1,
+     'Not yet Established': 0, 'T0': 0, 'T3c': 3, 'T2a': 2, 'T4d': 4,
+     'T4c': 4, 'T4a': 4, 'T3b': 3, 'T2b': 2, 'T4b': 4, 'T3d': 3}
+    if x in d:
+        return d[x]
+    else:
+        return 0
 
 def preprocess(df: pd.DataFrame):
     # Lymphatic penetration
@@ -172,7 +188,7 @@ def preprocess(df: pd.DataFrame):
     # X["Her2"] = X["Her2"].apply(lambda x: 0 if type(x) == str else x)
 
     # more simple but same i think todo chek with elad
-    X["Her2"] = X["Her2"].apply(lambda x: 1 if is_in_str(x, set_pos) else 0)
+    X["Her2"] = X["Her2"].apply(lambda x: 1 if Her2_pre(x, set_pos) else 0)
 
     # Age  preprocessing FIXME buggy, chek what need to do (remove line, get mean)
     X = X[X["Age"] < 120]
@@ -190,14 +206,29 @@ def preprocess(df: pd.DataFrame):
     whitelist = ['-', ' ', '=']
     X["KI67 protein"] = X["KI67 protein"].apply(
         lambda x: KI67_score(KI67_pre(x)))
-    print(sum(X["KI67 protein"] == 0) / X["KI67 protein"].size)
-    print(X["KI67 protein"].unique())
+
 
     # margin type
     margin_neg = {'נקיים', 'ללא'}
     margin_pos = {'נגועים'}
     X["Margin Type"] = X["Margin Type"].apply(
-        lambda x: 1 if is_in_str(x, margin_pos) else 0)
+        lambda x: 1 if Her2_pre(x, margin_pos) else 0)
+
+
+    #M -metastases mark (TNM)
+
+    X["M -metastases mark (TNM)"] = X["M -metastases mark (TNM)"].apply(lambda x:
+        metastases_mark_pre(x))
+
+    #Nodes exam pre_processing
+    X["Nodes exam"] = X["Nodes exam"].fillna(0)
+
+    #Positive nodes
+    X["Positive nodes"] = X["Positive nodes"].fillna(0)
+
+    #T -Tumor mark (TNM)
+    X["T -Tumor mark (TNM)"] = X["T -Tumor mark (TNM)"].apply(lambda x:
+        Tumor_mark_pre(x))
 
     return X
 
@@ -224,7 +255,8 @@ if __name__ == '__main__':
     print()
 
     d = {}
-    original_data["Lymphatic penetration"].apply(
+    a = original_data["T -Tumor mark (TNM)"]
+    original_data["T -Tumor mark (TNM)"].apply(
         lambda x: how_much_per_unique(x, d))
     print(d)
 
