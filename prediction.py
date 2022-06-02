@@ -72,13 +72,17 @@ def create_scatter_for_feature(X: pd.DataFrame, y: np.array, title,
     # fig.show()
 
 
-def is_in_str(s: str, words: set):
-    if type(s) != str:
-        return False
-    for w in words:
-        if s.find(w) != -1:
-            return True
-    return False
+def her_2_pre(x, pos_lst, neg_lst):
+    x = str(x)
+    for p in pos_lst:
+        if p in x:
+            return "pos"
+
+    for n in neg_lst:
+        if n in x:
+            return "neg"
+
+    return "null"
 
 
 def KI67_score(x):
@@ -115,11 +119,23 @@ def KI67_pre(x):
         return 0
 
 
+def Histological_diagnosis_pre(x):
+    d = {"INFILTRATING DUCT CARCINOMA": "IDC",
+         "LOBULAR INFILTRATING CARCINOMA": "LIC",
+         "INTRADUCTAL CARCINOMA": "IC",
+         "INFILTRATING DUCTULAR CARCINOMA WITH DCIS": "IDCWD"}
+
+    if x in d:
+        return d[x]
+    else:
+        return "non common"
+
+
 def how_much_per_unique(x, d: dict):
     if x in d:
         d[x] += 1
     else:
-        d[x] = 0
+        d[x] = 1
 
 
 def Lymphatic_penetration_pre(x):
@@ -130,6 +146,27 @@ def Lymphatic_penetration_pre(x):
     elif x[:2] == "L2":
         return 2
     return None
+
+
+def Lymphovascular_invasion_pre(x):
+    x = str(x)
+
+    lst_of_pos = ['+', 'extensive', 'yes', '(+)', 'ye', 'Ye', 'pos']
+    lst_of_neg = ['-', 'No', '(-)', 'NO', 'neg', 'no']
+    very_danger = 'MICROPAPILLARY VARIANT'
+
+    if x == very_danger:
+        return 'very danger'
+
+    for p in lst_of_pos:
+        if p in x:
+            return 'p'
+
+    for n in lst_of_neg:
+        if n in x:
+            return 'n'
+
+    return 'null'
 
 
 def find_score(x: str):
@@ -146,6 +183,15 @@ def find_score(x: str):
 
 
 def preprocess(df: pd.DataFrame):
+    # Histological diagnosis
+    df["Histological diagnosis"] = df["Histological diagnosis"].apply(
+        lambda x: Histological_diagnosis_pre(x))
+
+    # Ivi -Lymphovascular invasion
+    df["Ivi -Lymphovascular invasion"] = df[
+        "Ivi -Lymphovascular invasion"].apply(
+        lambda x: Lymphovascular_invasion_pre(x))
+
     # Lymphatic penetration
     df["Lymphatic penetration"] = df["Lymphatic penetration"].apply(
         lambda x: Lymphatic_penetration_pre(x))
@@ -155,26 +201,28 @@ def preprocess(df: pd.DataFrame):
     df["Diagnosis date"] = df["Diagnosis date"].apply(
         lambda x: (datetime.strptime(x[:10], '%d/%m/%Y') - today).days * -1)
 
-    # make categorical from Hospital and Form Name
+    # Her2 preprocessing
+    df["Her2"] = df["Her2"].apply(lambda x: her_2_pre(x,
+                                                      ["po", "PO", "Po", "os",
+                                                       "2", "3", "+", "חיובי",
+                                                       'בינוני', "Inter",
+                                                       "Indeter", "indeter",
+                                                       "inter"],
+                                                      ["ne", "Ne",
+                                                       "NE", "eg",
+                                                       "no", "0", "1",
+                                                       "-", "שלילי"]))
+
+    # make categorical
     X = pd.get_dummies(df, columns=[" Hospital",
                                     " Form Name",
-                                    "Histopatological degree"])
+                                    "Histopatological degree",
+                                    "Ivi -Lymphovascular invasion",
+                                    "Histological diagnosis",
+                                    "M -metastases mark (TNM)",
+                                    "Her2"])
 
-    # Her2 preprocessing
-    set_pos = {"po", "PO", "Po", "os", "2", "3", "+", "חיובי", 'בינוני',
-               "Inter",
-               "Indeter", "indeter", "inter"}
-    set_neg = {"ne", "Ne", "NE", "eg", "no", "0", "1", "-", "שלילי"}
-
-    X["Her2"] = X["Her2"].astype(str)
-    # X["Her2"] = X["Her2"].apply(lambda x: 1 if is_in_str(x, set_pos) else x)
-    # X["Her2"] = X["Her2"].apply(lambda x: 0 if is_in_str(x, set_neg) else x)
-    # X["Her2"] = X["Her2"].apply(lambda x: 0 if type(x) == str else x)
-
-    # more simple but same i think todo chek with elad
-    X["Her2"] = X["Her2"].apply(lambda x: 1 if is_in_str(x, set_pos) else 0)
-
-    # Age  preprocessing FIXME buggy, chek what need to do (remove line, get mean)
+    # Age  preprocessing
     X = X[X["Age"] < 120]
     X = X[0 < X["Age"]]
 
@@ -194,10 +242,10 @@ def preprocess(df: pd.DataFrame):
     print(X["KI67 protein"].unique())
 
     # margin type
-    margin_neg = {'נקיים', 'ללא'}
-    margin_pos = {'נגועים'}
+    margin_neg = ['נקיים', 'ללא']
+    margin_pos = ['נגועים']
     X["Margin Type"] = X["Margin Type"].apply(
-        lambda x: 1 if is_in_str(x, margin_pos) else 0)
+        lambda x: 1 if x in margin_pos else 0)
 
     return X
 
@@ -224,7 +272,7 @@ if __name__ == '__main__':
     print()
 
     d = {}
-    original_data["Lymphatic penetration"].apply(
+    original_data["T -Tumor mark (TNM)"].apply(
         lambda x: how_much_per_unique(x, d))
     print(d)
 
