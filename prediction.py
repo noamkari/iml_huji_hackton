@@ -251,7 +251,17 @@ def lymph_nodes_mark_pre(x):
     return "null"
 
 
-def preprocess(df: pd.DataFrame):
+def preprocess(df: pd.DataFrame, labels):
+    labels_name = labels.columns.values[0]
+    df = df.join(labels)
+    df.drop(
+        [
+            'User Name', 'Surgery date1', 'Surgery date2',
+            'Surgery date3', 'Surgery name1', 'Surgery name2', 'Surgery name3',
+            'surgery before or after-Activity date',
+            'surgery before or after-Actual activity'
+           ], axis=1, inplace=True)
+
     # Histological diagnosis
     df["Histological diagnosis"] = df["Histological diagnosis"].apply(
         lambda x: Histological_diagnosis_pre(x))
@@ -265,7 +275,7 @@ def preprocess(df: pd.DataFrame):
     df["Lymphatic penetration"] = df["Lymphatic penetration"].apply(
         lambda x: Lymphatic_penetration_pre(x))
 
-    df = df.groupby("Diagnosis date").agg({
+    df = df.groupby(["Diagnosis date", 'id-hushed_internalpatientid', labels_name]).agg({
         ' Form Name': ', '.join,
         ' Hospital': 'first', 'Age': 'first', 'Basic stage': 'first',
         'Her2': 'first', 'Histological diagnosis': 'first',
@@ -275,21 +285,18 @@ def preprocess(df: pd.DataFrame):
         'M -metastases mark (TNM)': 'first', 'Margin Type': 'first',
         'N -lymph nodes mark (TNM)': 'first',
         'Nodes exam': 'first', 'Positive nodes': 'first', 'Side': 'first',
-        'Stage': 'first', 'Surgery date1': 'first',
-        'Surgery date2': 'first', 'Surgery date3': 'first',
-        'Surgery name1': 'first', 'Surgery name2': 'first',
-        'Surgery name3': 'first', 'Surgery sum': 'first',
+        'Stage': 'first',
+        'Surgery sum': 'first',
         'T -Tumor mark (TNM)': 'first', 'Tumor depth': 'first',
         'Tumor width': 'first', 'er': 'first', 'pr': 'first',
-        'surgery before or after-Activity date': 'first',
-        'surgery before or after-Actual activity': 'first',
-        'id-hushed_internalpatientid': 'first'
+
     }).reset_index()
+
+
     # cur_date
     today = datetime.strptime("6/2/2022", '%d/%m/%Y')
     df["Diagnosis date"] = df["Diagnosis date"].apply(
         lambda x: (datetime.strptime(x[:10], '%d/%m/%Y') - today).days * -1)
-
 
     # Her2 preprocessing
     df["Her2"] = df["Her2"].apply(lambda x: her_2_pre(x))
@@ -315,7 +322,6 @@ def preprocess(df: pd.DataFrame):
 
     # make categorical
     X = pd.get_dummies(df, columns=[" Hospital",
-                                    " Form Name",
                                     "Histopatological degree",
                                     "Ivi -Lymphovascular invasion",
                                     "Histological diagnosis",
@@ -372,16 +378,11 @@ def preprocess(df: pd.DataFrame):
     for f in X.columns:
         if (sum(X[f].isnull())):
             print(f)
-    X.drop(
-        [
-            'Surgery date1', 'Surgery date2',
-            'Surgery date3', 'Surgery name1', 'Surgery name2', 'Surgery name3',
-            'Surgery sum', 'surgery before or after-Activity date',
-            'surgery before or after-Actual activity',
-            'id-hushed_internalpatientid'], axis=1, inplace=True)
-    # N -lymph nodes mark (TNM)
 
-    return X
+    y = X[labels_name]
+    del X[labels_name]
+    del X[' Form Name']
+    return X, y
 
 
 if __name__ == '__main__':
@@ -403,15 +404,15 @@ if __name__ == '__main__':
     y_tumor = pd.read_csv("./Mission 2 - Breast Cancer/train.labels.1.csv")
     y_tumor.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
 
-    print({f: original_data[f].unique().size for f in original_data.columns})
-    print()
+    a = set(original_data['id-hushed_internalpatientid'])
+
 
     d = {}
-
     original_data["surgery before or after-Actual activity"].apply(
         lambda x: how_much_per_unique(x, d))
     print(d)
-    X = preprocess(original_data)
+
+    X, y = preprocess(original_data, y_tumor)
 
     # feature_evaluation(X[["Age", "Her2", "Basic stage"]], y_tumor)
     print("this is me")
