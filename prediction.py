@@ -9,11 +9,8 @@ import plotly.graph_objects as go
 from datetime import datetime
 from sklearn.tree import DecisionTreeClassifier
 
-positive_sign = ['extensive', 'yes', '(+)', 'ye', 'Ye', 'po', 'PO', 'Po', 'os',
-                 'high', 'High', 'HIGH', '100']
-negative_sign = ['No', '(-)', 'NO', 'no', 'NE', 'Ne', 'ne', 'eg', 'ng', 'Ng',
-                 'NG', "שלילי", 'Low', 'low', 'LOW']
-
+positive_sign = ['extensive', 'yes', '(+)', 'ye', 'Ye', 'po', 'PO', 'Po', 'os', 'high', 'High', 'HIGH', '100']
+negative_sign = ['No', '(-)', 'NO', 'no', 'NE','Ne', 'ne','eg','ng','Ng','NG', "שלילי", 'Low', 'low', 'LOW' ]
 indeterminate_sign = ['בינוני', "Inter", "Indeter", "indeter", "inter"]
 
 
@@ -217,13 +214,13 @@ def metastases_mark_pre(x):
 
 def Tumor_mark_pre(x):
     d = {'T2': 2, 'T4': 4, 'T1c': 1, 'T1b': 1, 'MF': 0,
-         'T1': 1, 'Tis': 1061, 'T1mic': 1, 'Tx': 0, 'T3': 3, 'T1a': 1,
-         'Not yet Established': 0, 'T0': 0, 'T3c': 3, 'T2a': 2, 'T4d': 4,
+         'T1': 1, 'Tis': 'null', 'T1mic': 1, 'Tx': 0, 'T3': 3, 'T1a': 1,
+         'Not yet Established': 'null', 'T0': 0, 'T3c': 3, 'T2a': 2, 'T4d': 4,
          'T4c': 4, 'T4a': 4, 'T3b': 3, 'T2b': 2, 'T4b': 4, 'T3d': 3}
     if x in d:
         return d[x]
     else:
-        return 0
+        return 'null'
 
 
 def Stage_pre(x):
@@ -238,6 +235,19 @@ def side(x):
     if x['both']:
         x['l'] = 1
         x['r'] = 1
+
+
+def lymph_nodes_mark_pre(x):
+    if x == 'NX':
+        return 'NX'
+    if x == '#NAME?':
+        return '#NAME?'
+    if type(x) == str:
+        x = "".join(filter(lambda c: c.isdigit(), x))
+    if x in ["0", "1", "2", "3", "4"]:
+        return x
+    return "null"
+
 
 
 def preprocess(df: pd.DataFrame):
@@ -275,6 +285,14 @@ def preprocess(df: pd.DataFrame):
     # Stage
     df["Stage"] = df["Stage"].apply(lambda x: Stage_pre(x))
 
+    # T -Tumor mark (TNM)
+    df["T -Tumor mark (TNM)"] = df["T -Tumor mark (TNM)"].apply(
+        lambda x: Tumor_mark_pre(x))
+
+    # N -lymph nodes mark (TNM)
+    df["N -lymph nodes mark (TNM)"] = df["N -lymph nodes mark (TNM)"].apply(
+        lambda x: lymph_nodes_mark_pre(x))
+
     # make categorical
     X = pd.get_dummies(df, columns=[" Hospital",
                                     " Form Name",
@@ -286,16 +304,18 @@ def preprocess(df: pd.DataFrame):
                                     "Her2",
                                     "er",
                                     "pr",
-                                    "Stage"])
+                                    "Stage",
+                                    "T -Tumor mark (TNM)",
+                                    "N -lymph nodes mark (TNM)"])
 
     # # Side
-    # redundant_dummy = pd.get_dummies(X["Side"])
-    # redundant_dummy.rename(
-    #     columns={"ימין": "r", "שמאל": "l", "דו צדדי": "both"}, inplace=True)
-    # redundant_dummy.apply(side, axis=1)
-    #
-    # del X["Side"]
-    # X = pd.concat([redundant_dummy[["l", "r"]], X])
+    redundant_dummy = pd.get_dummies(X["Side"])
+    redundant_dummy.rename(
+        columns={"ימין": "r", "שמאל": "l", "דו צדדי": "both"}, inplace=True)
+    redundant_dummy.apply(side, axis=1)
+    del X["Side"]
+    X = X.join(redundant_dummy["r"])
+    X = X.join(redundant_dummy["l"])
 
     # Age  preprocessing
     X = X[X["Age"] < 120]
@@ -324,17 +344,23 @@ def preprocess(df: pd.DataFrame):
     # Positive nodes
     X["Positive nodes"] = X["Positive nodes"].fillna(0)
 
-    # T -Tumor mark (TNM)
-    X["T -Tumor mark (TNM)"] = X["T -Tumor mark (TNM)"].apply(
-        lambda x: Tumor_mark_pre(x))
+    # Positive nodes
+    X["Tumor depth"] = X["Tumor depth"].fillna(0)
+    X["Tumor width"] = X["Tumor width"].fillna(0)
+    X["Surgery sum"] = X["Surgery sum"].fillna(0)
 
+
+    for f in X.columns:
+        if (sum(X[f].isnull())):
+            print(f)
     X.drop(
-        ['Side', 'N -lymph nodes mark (TNM)', 'Tumor depth', 'Tumor width',
+        [
          'User Name', 'Surgery date1', 'Surgery date2',
          'Surgery date3', 'Surgery name1', 'Surgery name2', 'Surgery name3',
          'Surgery sum', 'surgery before or after-Activity date',
          'surgery before or after-Actual activity',
          'id-hushed_internalpatientid'], axis=1, inplace=True)
+    #N -lymph nodes mark (TNM)
 
     return X
 
@@ -362,9 +388,9 @@ if __name__ == '__main__':
 
     d = {}
 
-    # original_data["Surgery sum"].apply(
-    #     lambda x: how_much_per_unique(x, d))
-    # print(d)
+    original_data["surgery before or after-Actual activity"].apply(
+        lambda x: how_much_per_unique(x, d))
+    print(d)
 
     X = preprocess(original_data)
 
