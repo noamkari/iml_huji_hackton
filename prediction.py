@@ -9,6 +9,9 @@ import plotly.graph_objects as go
 from datetime import datetime
 from sklearn.tree import DecisionTreeClassifier
 
+from part_1_base_line import run_predicting_metastases
+from part_2_base_line import run_tumor_size_pred
+
 positive_sign = ['extensive', 'yes', '(+)', 'ye', 'Ye', 'po', 'PO', 'Po', 'os',
                  'high', 'High', 'HIGH', '100']
 negative_sign = ['No', '(-)', 'NO', 'no', 'NE', 'Ne', 'ne', 'eg', 'ng', 'Ng',
@@ -260,12 +263,21 @@ def preprocess(df: pd.DataFrame, labels):
             'Surgery date3', 'Surgery name1', 'Surgery name2', 'Surgery name3',
             'surgery before or after-Activity date',
             'surgery before or after-Actual activity'
-           ], axis=1, inplace=True)
+        ], axis=1, inplace=True)
 
 
-def preprocess(df: pd.DataFrame):
+def preprocess(df: pd.DataFrame, labels):
     df.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
 
+    labels_name = labels.columns.values[0]
+    df = df.join(labels)
+    df.drop(
+        [
+            'User Name', 'Surgery date1', 'Surgery date2',
+            'Surgery date3', 'Surgery name1', 'Surgery name2', 'Surgery name3',
+            'surgery before or after-Activity date',
+            'surgery before or after-Actual activity'
+        ], axis=1, inplace=True)
 
     # Histological diagnosis
     df["Histological diagnosis"] = df["Histological diagnosis"].apply(
@@ -280,7 +292,8 @@ def preprocess(df: pd.DataFrame):
     df["Lymphatic penetration"] = df["Lymphatic penetration"].apply(
         lambda x: Lymphatic_penetration_pre(x))
 
-    df = df.groupby(["Diagnosis date", 'id-hushed_internalpatientid', labels_name]).agg({
+    df = df.groupby(
+        ["Diagnosis date", 'id-hushed_internalpatientid', labels_name]).agg({
         ' Form Name': ', '.join,
         ' Hospital': 'first', 'Age': 'first', 'Basic stage': 'first',
         'Her2': 'first', 'Histological diagnosis': 'first',
@@ -296,7 +309,6 @@ def preprocess(df: pd.DataFrame):
         'Tumor width': 'first', 'er': 'first', 'pr': 'first',
 
     }).reset_index()
-
 
     # cur_date
     today = datetime.strptime("6/2/2022", '%d/%m/%Y')
@@ -387,6 +399,7 @@ def preprocess(df: pd.DataFrame):
     y = X[labels_name]
     del X[labels_name]
     del X[' Form Name']
+    del X['id-hushed_internalpatientid']
     return X, y
 
 
@@ -408,15 +421,25 @@ if __name__ == '__main__':
     y_tumor = pd.read_csv("./Mission 2 - Breast Cancer/train.labels.1.csv")
     y_tumor.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
 
-    a = set(original_data['id-hushed_internalpatientid'])
+    y_metastases = pd.read_csv(
+        "./Mission 2 - Breast Cancer/train.labels.0.csv")
 
+    a = set(original_data['id-hushed_internalpatientid'])
 
     d = {}
     original_data["surgery before or after-Actual activity"].apply(
         lambda x: how_much_per_unique(x, d))
     print(d)
 
-    X, y = preprocess(original_data, y_tumor)
+
+    X_metastases, y_metastases = preprocess(original_data,y_metastases )
+    X_tumor, y_tumor = preprocess(original_data, y_tumor)
 
     # feature_evaluation(X[["Age", "Her2", "Basic stage"]], y_tumor)
+    X_train, X_test, y_train, y_test = train_test_split(X_metastases, y_metastases)
+    pred_part_1 = run_predicting_metastases(X_train, y_train, X_test)
+
+    X_train, X_test, y_train, y_test = train_test_split(X_tumor, y_tumor)
+    pred_part_2 = run_tumor_size_pred(X_train, y_train, X_test)
+
     print("this is me")

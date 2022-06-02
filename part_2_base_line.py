@@ -1,14 +1,9 @@
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import AdaBoostRegressor
-from sklearn.model_selection import cross_validate, train_test_split
-import plotly.graph_objects as go
-from sklearn.metrics import mean_squared_error
-from sklearn.linear_model import LinearRegression
-
-from prediction import preprocess
 
 CHOSEN_DEPTH = 20
 
@@ -69,12 +64,6 @@ def split_data(X: pd.DataFrame, y: pd.DataFrame):
 
 
 def run_tumor_size_pred(train_data, labels, test_data):
-
-    full_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
-
-    labels = pd.read_csv("./Mission 2 - Breast Cancer/train.labels.1.csv")
-
-    processed_data = preprocess(full_data)
 
     fitted_cls = fit_classifier(train_data, labels)
     have_cancer_train_X, have_cancer_train_y = split_data(train_data, labels)
