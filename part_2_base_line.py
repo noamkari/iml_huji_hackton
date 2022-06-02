@@ -73,7 +73,8 @@ def run_tumor_size_pred(train_data, labels, test_data):
 
     full_pred, cancer_pred, indx = predict_classifier(test_data, fitted_cls)
     linear_pred = linear_model.predict(cancer_pred)
-    return np.put(full_pred, indx, linear_pred)
+    np.put(full_pred, indx, linear_pred)
+    return full_pred
 
     # lin_pred_ = linear_model.predict(have_cancer_train_X)
     # lin_success_train = np.square(

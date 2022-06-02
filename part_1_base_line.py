@@ -40,20 +40,9 @@ def check_estimators(train_data, labels):
 ######## PREDICTION FUNCTION ###############
 ###########################################
 def run_predicting_metastases(train_data, labels, test_data):
-    # full_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
-    # full_data.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
-    # labels = pd.read_csv("./Mission 2 - Breast Cancer/train.labels.0.csv")
-    # classified_labels = np.where(labels == '[]', 0, 1)
-    #
-    # processed_data = preprocess(full_data).drop(['Side', 'User Name','Stage','Surgery date1','Surgery date2',
-    #                                              'Surgery date3','Surgery name1','Surgery name2','Surgery name3',
-    #                                              'Surgery sum','surgery before or after-Activity date',
-    #                                              'surgery before or after-Actual activity',
-    #                                              'id-hushed_internalpatientid'],axis=1)
 
     forest = RandomForestClassifier(random_state=1)
     multi_target_forest = MultiOutputClassifier(forest, n_jobs=2)
     multi_target_forest.fit(train_data, labels)
     return multi_target_forest.predict(test_data)
-    # TODO: 1. RUN! and check if the full data gives the restuls as good as the dropped data.
-    # TODO 2. delete comments of dropping data in case of need.
+
