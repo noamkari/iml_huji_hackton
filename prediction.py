@@ -5,6 +5,9 @@ import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 
 
+import seaborn as sn
+import matplotlib.pyplot as plt
+
 def load_data(filename: str):
     """
     Load  dataset
@@ -54,6 +57,14 @@ if __name__ == '__main__':
 
     # Load data and preprocess
     full_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
+    # for f in full_data.columns:
+    #     f.replace('-הנחבא','')
+    full_data.rename(columns=lambda x: x.replace('אבחנה_', ''), inplace=True)
+    corrMatrix = full_data.corr(method = 'pearson')
+    print(corrMatrix)
+    sn.heatmap(corrMatrix, annot=True)
+    plt.show()
+    full_data['Basic stage'].corr(full_data[])
     X, y = load_data("test.csv")
     train_X, test_X, train_y, test_y = train_test_split(X, y)
 
