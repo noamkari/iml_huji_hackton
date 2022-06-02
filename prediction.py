@@ -237,6 +237,19 @@ def side(x):
         x['r'] = 1
 
 
+def lymph_nodes_mark_pre(x):
+    if x == 'NX':
+        return 'NX'
+    if x == '#NAME?':
+        return '#NAME?'
+    if type(x) == str:
+        x = "".join(filter(lambda c: c.isdigit(), x))
+    if x in ["0", "1", "2", "3", "4"]:
+        return x
+    return "null"
+
+
+
 def preprocess(df: pd.DataFrame):
     # Histological diagnosis
     df["Histological diagnosis"] = df["Histological diagnosis"].apply(
@@ -270,6 +283,14 @@ def preprocess(df: pd.DataFrame):
     # Stage
     df["Stage"] = df["Stage"].apply(lambda x: Stage_pre(x))
 
+    # T -Tumor mark (TNM)
+    df["T -Tumor mark (TNM)"] = df["T -Tumor mark (TNM)"].apply(
+        lambda x: Tumor_mark_pre(x))
+
+    # N -lymph nodes mark (TNM)
+    df["N -lymph nodes mark (TNM)"] = df["N -lymph nodes mark (TNM)"].apply(
+        lambda x: lymph_nodes_mark_pre(x))
+
     # make categorical
     X = pd.get_dummies(df, columns=[" Hospital",
                                     " Form Name",
@@ -281,16 +302,18 @@ def preprocess(df: pd.DataFrame):
                                     "Her2",
                                     "er",
                                     "pr",
-                                    "Stage"])
+                                    "Stage",
+                                    "T -Tumor mark (TNM)",
+                                    "N -lymph nodes mark (TNM)"])
 
     # # Side
-    # redundant_dummy = pd.get_dummies(X["Side"])
-    # redundant_dummy.rename(
-    #     columns={"ימין": "r", "שמאל": "l", "דו צדדי": "both"}, inplace=True)
-    # redundant_dummy.apply(side, axis=1)
-    #
-    # del X["Side"]
-    # X = pd.concat([redundant_dummy[["l", "r"]], X])
+    redundant_dummy = pd.get_dummies(X["Side"])
+    redundant_dummy.rename(
+        columns={"ימין": "r", "שמאל": "l", "דו צדדי": "both"}, inplace=True)
+    redundant_dummy.apply(side, axis=1)
+    del X["Side"]
+    X = X.join(redundant_dummy["r"])
+    X = X.join(redundant_dummy["l"])
 
     # Age  preprocessing
     X = X[X["Age"] < 120]
@@ -319,20 +342,24 @@ def preprocess(df: pd.DataFrame):
     # Positive nodes
     X["Positive nodes"] = X["Positive nodes"].fillna(0)
 
-    # T -Tumor mark (TNM)
-    X["T -Tumor mark (TNM)"] = X["T -Tumor mark (TNM)"].apply(
-        lambda x: Tumor_mark_pre(x))
+    # Positive nodes
+    X["Tumor depth"] = X["Tumor depth"].fillna(0)
+    X["Tumor width"] = X["Tumor width"].fillna(0)
+    X["Surgery sum"] = X["Surgery sum"].fillna(0)
 
+
+    for f in X.columns:
+        if (sum(X[f].isnull())):
+            print(f)
     X.drop(
-        ['Side', 'N -lymph nodes mark (TNM)', 'Tumor depth', 'Tumor width',
+        [
          'User Name', 'Surgery date1', 'Surgery date2',
          'Surgery date3', 'Surgery name1', 'Surgery name2', 'Surgery name3',
          'Surgery sum', 'surgery before or after-Activity date',
          'surgery before or after-Actual activity',
          'id-hushed_internalpatientid'], axis=1, inplace=True)
-    for f in X.columns:
-        if (sum(X[f].isnull())):
-            print(f)
+    #N -lymph nodes mark (TNM)
+
     return X
 
 
@@ -360,9 +387,9 @@ if __name__ == '__main__':
 
     d = {}
 
-    original_data["Tumor depth"].apply(
+    original_data["surgery before or after-Actual activity"].apply(
         lambda x: how_much_per_unique(x, d))
-    # print(d)
+    print(d)
 
     X = preprocess(original_data)
 
