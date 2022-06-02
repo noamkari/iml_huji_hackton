@@ -1,41 +1,18 @@
+import statistics
+
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.model_selection import train_test_split
 import sys
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+from datetime import datetime
 from sklearn.tree import DecisionTreeClassifier
 
 
 import seaborn as sn
 import matplotlib.pyplot as plt
 
-# def load_data(filename: str):
-#     """
-#     Load  dataset
-#           Path to  dataset
-#     Returns
-#     -------
-#     Design matrix and response vector in either of the following formats:
-#     1) Single dataframe with last column representing the response
-#     2) Tuple of pandas.DataFrame and Series
-#     3) Tuple of ndarray of shape (n_samples, n_features) and ndarray of shape (n_samples,)
-#     """
-#     # TODO - replace below code with any desired preprocessing
-#     full_data = pd.read_csv(filename).dropna().drop_duplicates()
-#     features = full_data[["h_booking_id",
-#                           "hotel_id",
-#                           "accommadation_type_name",
-#                           "hotel_star_rating",
-#                           "customer_nationality"]]
-#     labels = full_data["cancellation_datetime"]
-#
-#     return features, labelsParameters
-#     ----------
-#     filename: str
-#
-#
-#
 def evaluate_and_export(estimator, X: np.ndarray, filename: str):
     """
     Export to specified file the prediction results of given estimator on given testset.
@@ -98,71 +75,208 @@ def create_scatter_for_feature(X: pd.DataFrame, y: np.array, title,
     # fig.show()
 
 
-def is_in_str(s: str, words: set):
-    if type(s) != str:
-        return False
-    for w in words:
-        if s.find(w) != -1:
-            return True
-    return False
+def her_2_pre(x, pos_lst, neg_lst):
+    x = str(x)
+    for p in pos_lst:
+        if p in x:
+            return "pos"
+
+    for n in neg_lst:
+        if n in x:
+            return "neg"
+
+    return "null"
 
 
-from datetime import date
-from datetime import datetime
+def KI67_score(x):
+    if (0 < x <= 5):
+        return 1
+    if (5 < x < 10):
+        return 2
+    if (10 <= x < 50):
+        return 3
+    if (50 <= x <= 100):
+        return 4
+    else:
+        return 0
 
 
-def proces_time(x):
-    today = datetime.strptime("6/2/2022", '%d/%m/%Y')
-    print(type(x))
-    x = datetime.strptime(x[:10], '%d/%m/%Y')
-    print(type(x))
-    print(type((x - today).days))
+def KI67_pre(x):
+    for sub in ['Sc', 'sc']:
+        out = x.find(sub)
+        if out != -1:
+            for i in range(out, len(x)):
+                if x[i].isdigit():
+                    return int(x[i])
+    sep = ['-', ' ', '=']
+    x = "".join(filter(lambda c: c in sep or c.isdigit(), x)).replace('-',
+                                                                      ' ').replace(
+        '=', ' ')
+    x = [int(s) for s in x.split(' ') if s.isdigit()]
+    if x == []:
+        return 0
+    x = statistics.mean(x)
+    if (0 < x < 100):
+        return x
+    else:
+        return 0
 
 
-def how_much(x, d: dict):
+def Histological_diagnosis_pre(x):
+    d = {"INFILTRATING DUCT CARCINOMA": "IDC",
+         "LOBULAR INFILTRATING CARCINOMA": "LIC",
+         "INTRADUCTAL CARCINOMA": "IC",
+         "INFILTRATING DUCTULAR CARCINOMA WITH DCIS": "IDCWD"}
+
+    if x in d:
+        return d[x]
+    else:
+        return "non common"
+
+
+def how_much_per_unique(x, d: dict):
     if x in d:
         d[x] += 1
     else:
-        d[x] = 0
+        d[x] = 1
+
+
+def Lymphatic_penetration_pre(x):
+    if x[:2] == "L0":
+        return 0
+    elif x[:2] == "L1" or x[:2] == "LI":
+        return 1
+    elif x[:2] == "L2":
+        return 2
+    return None
+
+
+def Lymphovascular_invasion_pre(x):
+    x = str(x)
+
+    lst_of_pos = ['+', 'extensive', 'yes', '(+)', 'ye', 'Ye', 'pos']
+    lst_of_neg = ['-', 'No', '(-)', 'NO', 'neg', 'no']
+    very_danger = 'MICROPAPILLARY VARIANT'
+
+    if x == very_danger:
+        return 'very danger'
+
+    for p in lst_of_pos:
+        if p in x:
+            return 'p'
+
+    for n in lst_of_neg:
+        if n in x:
+            return 'n'
+
+    return 'null'
+
+
+def find_score(x: str):
+    for sub in ['Sc', 'sc']:
+        out = x.find(sub)
+
+        if out != -1:
+            for i in range(out, len(x)):
+                if x[i].isdigit():
+                    return x[i]
+                elif x[i] == 'I':
+                    return 1
+    return None
+
+
+def metastases_mark_pre(x):
+    d = {"M1": "1", "M1a": "1", "M1b": "1", "M0": "0"}
+    if x in d:
+        return d[x]
+    else:
+        return "null"
+
+
+def Tumor_mark_pre(x):
+    d = {'T2': 2, 'T4': 4, 'T1c': 1, 'T1b': 1, 'MF': 0,
+         'T1': 1, 'Tis': 1061, 'T1mic': 1, 'Tx': 0, 'T3': 3, 'T1a': 1,
+         'Not yet Established': 0, 'T0': 0, 'T3c': 3, 'T2a': 2, 'T4d': 4,
+         'T4c': 4, 'T4a': 4, 'T3b': 3, 'T2b': 2, 'T4b': 4, 'T3d': 3}
+    if x in d:
+        return d[x]
+    else:
+        return 0
 
 
 def preprocess(df: pd.DataFrame):
-    # cur_date
+    # Histological diagnosis
+    df["Histological diagnosis"] = df["Histological diagnosis"].apply(
+        lambda x: Histological_diagnosis_pre(x))
 
+    # Ivi -Lymphovascular invasion
+    df["Ivi -Lymphovascular invasion"] = df[
+        "Ivi -Lymphovascular invasion"].apply(
+        lambda x: Lymphovascular_invasion_pre(x))
+
+    # Lymphatic penetration
+    df["Lymphatic penetration"] = df["Lymphatic penetration"].apply(
+        lambda x: Lymphatic_penetration_pre(x))
+
+    # cur_date
     today = datetime.strptime("6/2/2022", '%d/%m/%Y')
     df["Diagnosis date"] = df["Diagnosis date"].apply(
-        lambda x: (datetime.strptime(x[:10], '%d/%m/%Y') - today).days)
-
-    # make categorical from Hospital and Form Name
-    X = pd.get_dummies(df, columns=[" Hospital", " Form Name"])
+        lambda x: (datetime.strptime(x[:10], '%d/%m/%Y') - today).days * -1)
 
     # Her2 preprocessing
-    set_pos = {"po", "PO", "Po", "2", "3", "+", "חיובי", 'בינוני', "Inter",
-               "Indeter", "indeter", "inter"}
-    set_neg = {"ne", "Ne", "NE", "eg", "no", "0", "1", "-", "שלילי"}
-    print(X.columns)
-    X["Her2"] = X["Her2"].astype(str)
-    X["Her2"] = X["Her2"].apply(lambda x: 1 if is_in_str(x, set_pos) else x)
-    X["Her2"] = X["Her2"].apply(lambda x: 0 if is_in_str(x, set_neg) else x)
-    X["Her2"] = X["Her2"].apply(lambda x: 0 if type(x) == str else x)
+    df["Her2"] = df["Her2"].apply(lambda x: her_2_pre(x,
+                                                      ["po", "PO", "Po", "os",
+                                                       "2", "3", "+", "חיובי",
+                                                       'בינוני', "Inter",
+                                                       "Indeter", "indeter",
+                                                       "inter"],
+                                                      ["ne", "Ne",
+                                                       "NE", "eg",
+                                                       "no", "0", "1",
+                                                       "-", "שלילי"]))
 
-    # more simple but same i think todo chek with elad
-    a = df["Her2"].apply(lambda x: 1 if is_in_str(x, set_pos) else 0)
-    val = (set(a == X["Her2"]))
+    # M -metastases mark (TNM)
+    df["M -metastases mark (TNM)"] = df["M -metastases mark (TNM)"].apply(
+        lambda x: metastases_mark_pre(x))
 
-    # Age  preprocessing FIXME buggy, chek what need to do (remove line, get mean)
-    # X = X[0 < X["Age"] < 120]
+    # make categorical
+    X = pd.get_dummies(df, columns=[" Hospital",
+                                    " Form Name",
+                                    "Histopatological degree",
+                                    "Ivi -Lymphovascular invasion",
+                                    "Histological diagnosis",
+                                    "M -metastases mark (TNM)",
+                                    "Her2"])
+    # Age  preprocessing
+    X = X[X["Age"] < 120]
+    X = X[0 < X["Age"]]
 
     # Basic stage preprocessing
     X["Basic stage"] = X["Basic stage"].replace(
         {'Null': 0, 'c - Clinical': 1, 'p - Pathological': 2,
          'r - Reccurent': 3})
 
+    # KI67 protein preprocessing
+    # print(sum(X["KI67 protein"].apply(lambda x: 1 if validate(x) else 0)))
+    X["KI67 protein"] = X["KI67 protein"].astype(str)
+    X["KI67 protein"] = X["KI67 protein"].apply(
+        lambda x: KI67_score(KI67_pre(x)))
+
     # margin type
-    margin_neg = {'נקיים', 'ללא'}
-    margin_pos = {'נגועים'}
+    margin_neg = ['נקיים', 'ללא']
+    margin_pos = ['נגועים']
     X["Margin Type"] = X["Margin Type"].apply(
-        lambda x: 1 if is_in_str(x, margin_pos) else 0)
+        lambda x: 1 if x in margin_pos else 0)
+
+    # Nodes exam pre_processing
+    X["Nodes exam"] = X["Nodes exam"].fillna(0)
+
+    # Positive nodes
+    X["Positive nodes"] = X["Positive nodes"].fillna(0)
+
+    # T -Tumor mark (TNM)
+    X["T -Tumor mark (TNM)"] = X["T -Tumor mark (TNM)"].apply(
+        lambda x: Tumor_mark_pre(x))
 
     return X
 
@@ -171,15 +285,12 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     # Load data and preprocess
+
     full_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
     # for f in full_data.columns:
     #     f.replace('-הנחבא','')
     full_data.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
-    corrMatrix = full_data.corr(method = 'pearson')
-    print(corrMatrix)
-    sn.heatmap(corrMatrix, annot=True)
-    plt.show()
-    # full_data['Basic stage'].corr(full_data[])
+
     # data_path, y_location_of_distal, y_tumor_path = sys.argv[1:]
 
     original_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
@@ -191,13 +302,20 @@ if __name__ == '__main__':
     y_tumor = pd.read_csv("./Mission 2 - Breast Cancer/train.labels.1.csv")
     y_tumor.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
 
+    for f in original_data.columns:
+        print(f)
+
     print({f: original_data[f].unique().size for f in original_data.columns})
-    print(set(original_data["Histological diagnosis"]))
+    print()
 
     print("Histological diagnosis")
     d = {}
-    original_data["Histological diagnosis"].apply(lambda x: how_much(x, d))
+    original_data["T -Tumor mark (TNM)"].apply(
+        lambda x: how_much_per_unique(x, d))
     print(d)
 
     X = preprocess(original_data)
-    feature_evaluation(X[["Age", "Her2", "Basic stage"]], y_tumor)
+
+
+    # feature_evaluation(X[["Age", "Her2", "Basic stage"]], y_tumor)
+    print("this is me")
