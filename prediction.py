@@ -10,6 +10,9 @@ from datetime import datetime
 from sklearn.tree import DecisionTreeClassifier
 
 
+import seaborn as sn
+import matplotlib.pyplot as plt
+
 def evaluate_and_export(estimator, X: np.ndarray, filename: str):
     """
     Export to specified file the prediction results of given estimator on given testset.
@@ -282,6 +285,12 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     # Load data and preprocess
+
+    full_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
+    # for f in full_data.columns:
+    #     f.replace('-הנחבא','')
+    full_data.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
+
     # data_path, y_location_of_distal, y_tumor_path = sys.argv[1:]
 
     original_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
@@ -299,12 +308,14 @@ if __name__ == '__main__':
     print({f: original_data[f].unique().size for f in original_data.columns})
     print()
 
+    print("Histological diagnosis")
     d = {}
     original_data["T -Tumor mark (TNM)"].apply(
         lambda x: how_much_per_unique(x, d))
     print(d)
 
     X = preprocess(original_data)
+
 
     # feature_evaluation(X[["Age", "Her2", "Basic stage"]], y_tumor)
     print("this is me")
