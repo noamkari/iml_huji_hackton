@@ -78,14 +78,33 @@ def is_in_str(s: str, words: set):
         if s.find(w) != -1:
             return True
     return False
+
+
+def KI67_score(x):
+    if(0<x<=5):
+        return 1
+    if(5<x<10):
+        return 2
+    if(10<=x<50):
+        return 3
+    if(50<=x<=100):
+        return 4
+    else:
+        return 0
 def KI67_pre(x):
+    for sub in ['Sc', 'sc']:
+        out = x.find(sub)
+        if out != -1:
+            for i in range(out, len(x)):
+                if x[i].isdigit():
+                    return int(x[i])
     sep = ['-', ' ', '=']
     x = "".join(filter(lambda c: c in sep or c.isdigit(), x)).replace('-', ' ').replace('=', ' ')
     x = [int(s) for s in x.split(' ') if s.isdigit()]
     if x == []:
         return 0
     x = statistics.mean(x)
-    if(0 < x < 100):
+    if(0<x<100):
         return x
     else:
         return 0
@@ -133,7 +152,9 @@ def preprocess(df: pd.DataFrame):
     X["Her2"] = X["Her2"].apply(lambda x: 1 if is_in_str(x, set_pos) else 0)
 
     # Age  preprocessing FIXME buggy, chek what need to do (remove line, get mean)
-    # X = X[0 < X["Age"] < 120]
+    X = X[X["Age"] < 120]
+    X = X[0 < X["Age"]]
+
 
     # Basic stage preprocessing
     X["Basic stage"] = X["Basic stage"].replace(
@@ -141,22 +162,13 @@ def preprocess(df: pd.DataFrame):
          'r - Reccurent': 3})
 
     # KI67 protein preprocessing
+    # print(sum(X["KI67 protein"].apply(lambda x: 1 if validate(x) else 0)))
     X["KI67 protein"] = X["KI67 protein"].astype(str)
+
     whitelist = ['-', ' ', '=']
-    X["KI67 protein"] = X["KI67 protein"].apply(lambda x: KI67_pre(x))
+    X["KI67 protein"] = X["KI67 protein"].apply(lambda x: KI67_score(KI67_pre(x)))
     print(sum(X["KI67 protein"] == 0) / X["KI67 protein"].size)
     print(X["KI67 protein"].unique())
-
-    # print("".join(filter(lambda c: c in whitelist or c.isdigit(), "20-40%")))
-    # print(KI67_pre('Score 3 (10-49%)'))
-
-
-    # X["KI67 protein"] = X["KI67 protein"].apply(lambda x: "".join(filter(lambda c: c in whitelist or c.isdigit(), x)))
-    # X["KI67 protein"] = X["KI67 protein"].apply(lambda x: [int(s) for s in x.split(whitelist) if s.isdigit()])
-    # X["KI67 protein"] = X["KI67 protein"].apply(lambda x: statistics.mean(x))
-    # print(X["KI67 protein"].unique())
-    # X["KI67 protein"] = X["KI67 protein"].apply(lambda x: x if 0 < x < 100 else 0)
-    # print(X["KI67 protein"].unique())
 
     # margin type
     margin_neg = {'נקיים', 'ללא'}
@@ -184,13 +196,15 @@ if __name__ == '__main__':
 
     for f in original_data.columns:
         print(f)
-    print(original_data["KI67 protein"].unique())
+    # print(original_data["KI67 protein"].unique())
 
     # print({f: original_data[f].unique().size for f in original_data.columns})
     # print(set(original_data["Histological diagnosis"]))
 
+
+
     d = {}
-    original_data["Histological diagnosis"].apply(lambda x: how_much(x, d))
+    original_data["KI67 protein"].apply(lambda x: how_much(x, d))
     print(d)
 
     X = preprocess(original_data)
