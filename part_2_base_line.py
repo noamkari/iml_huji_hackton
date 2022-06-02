@@ -10,11 +10,11 @@ CHOSEN_DEPTH = 20
 
 def predict_classifier(X: pd.DataFrame, fitted_model):
     pred = fitted_model.predict(X)
-
+    # pred.reshape(-1)
     has_cancer_ind = np.argwhere(np.where(pred == 0, 0, 1) == 1)
-    has_cancer_ind = has_cancer_ind.reshape(has_cancer_ind.shape[0])
+    has_cancer_ind = has_cancer_ind.reshape(-1)
 
-    return pred, np.take(pred, indices=has_cancer_ind, axis=0), has_cancer_ind
+    return pred, np.take(X, indices=has_cancer_ind, axis=0), has_cancer_ind
 
 
 # We use this function in order to find the best classifier.
@@ -53,7 +53,7 @@ def fit_classifier(X: pd.DataFrame, y: pd.Series):
 
 def split_data(X: pd.DataFrame, y: pd.DataFrame):
     classified_y = np.where(y == 0, 0, 1)
-    has_cancer_ind = np.argwhere(classified_y == 1)
+    has_cancer_ind = np.argwhere((classified_y.reshape(-1)) == 1)
     has_cancer_ind = has_cancer_ind.reshape(
         has_cancer_ind.shape[0])
     have_cancer_X = np.take(X, indices=has_cancer_ind,

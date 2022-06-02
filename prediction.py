@@ -400,7 +400,7 @@ def preprocess(df: pd.DataFrame, labels):
     del X[labels_name]
     del X[' Form Name']
     del X['id-hushed_internalpatientid']
-    return X, y
+    return X, pd.DataFrame(y)
 
 
 if __name__ == '__main__':
@@ -423,6 +423,8 @@ if __name__ == '__main__':
 
     y_metastases = pd.read_csv(
         "./Mission 2 - Breast Cancer/train.labels.0.csv")
+    y_metastases.rename(columns=lambda x: x.replace('אבחנה-', ''),
+                        inplace=True)
 
     a = set(original_data['id-hushed_internalpatientid'])
 
@@ -431,15 +433,17 @@ if __name__ == '__main__':
         lambda x: how_much_per_unique(x, d))
     print(d)
 
-
-    X_metastases, y_metastases = preprocess(original_data,y_metastases )
+    X_metastases, y_metastases = preprocess(original_data, y_metastases)
     X_tumor, y_tumor = preprocess(original_data, y_tumor)
 
     # feature_evaluation(X[["Age", "Her2", "Basic stage"]], y_tumor)
-    X_train, X_test, y_train, y_test = train_test_split(X_metastases, y_metastases)
+    X_train, X_test, y_train, y_test = train_test_split(X_metastases,
+                                                        y_metastases)
     pred_part_1 = run_predicting_metastases(X_train, y_train, X_test)
 
     X_train, X_test, y_train, y_test = train_test_split(X_tumor, y_tumor)
     pred_part_2 = run_tumor_size_pred(X_train, y_train, X_test)
+
+
 
     print("this is me")
