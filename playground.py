@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 
 def foo(n):
@@ -19,9 +20,10 @@ if __name__ == '__main__':
     a = np.array([[1, 10, 100],
                   [2, 20, 200],
                   [3, 30, 300]])
+    df = pd.DataFrame({'a': ["g1", "g2", "g3"], 'b': [0, 0, -1]})
+    d = pd.get_dummies(df, columns=['a'])
     b = np.zeros((4, 2))
     s = [1, 10, 100]
-    print(np.apply_along_axis(lambda x: 0 if x in s else 0, 1, a))
     b[0][0] = 1
     b[1][1] = 2
     print(np.sum(b))
