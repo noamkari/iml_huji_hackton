@@ -9,8 +9,10 @@ import plotly.graph_objects as go
 from datetime import datetime
 from sklearn.tree import DecisionTreeClassifier
 
-positive_sign = ['extensive', 'yes', '(+)', 'ye', 'Ye', 'po', 'PO', 'Po', 'os', 'high', 'High', 'HIGH', '100']
-negative_sign = ['No', '(-)', 'NO', 'no', 'NE','Ne', 'ne','eg','ng','Ng','NG', "שלילי", 'Low', 'low', 'LOW' ]
+positive_sign = ['extensive', 'yes', '(+)', 'ye', 'Ye', 'po', 'PO', 'Po', 'os',
+                 'high', 'High', 'HIGH', '100']
+negative_sign = ['No', '(-)', 'NO', 'no', 'NE', 'Ne', 'ne', 'eg', 'ng', 'Ng',
+                 'NG', "שלילי", 'Low', 'low', 'LOW']
 indeterminate_sign = ['בינוני', "Inter", "Indeter", "indeter", "inter"]
 
 
@@ -249,7 +251,6 @@ def lymph_nodes_mark_pre(x):
     return "null"
 
 
-
 def preprocess(df: pd.DataFrame):
     df.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
 
@@ -349,18 +350,17 @@ def preprocess(df: pd.DataFrame):
     X["Tumor width"] = X["Tumor width"].fillna(0)
     X["Surgery sum"] = X["Surgery sum"].fillna(0)
 
-
     for f in X.columns:
         if (sum(X[f].isnull())):
             print(f)
     X.drop(
         [
-         'User Name', 'Surgery date1', 'Surgery date2',
-         'Surgery date3', 'Surgery name1', 'Surgery name2', 'Surgery name3',
-         'Surgery sum', 'surgery before or after-Activity date',
-         'surgery before or after-Actual activity',
-         'id-hushed_internalpatientid'], axis=1, inplace=True)
-    #N -lymph nodes mark (TNM)
+            'User Name', 'Surgery date1', 'Surgery date2',
+            'Surgery date3', 'Surgery name1', 'Surgery name2', 'Surgery name3',
+            'Surgery sum', 'surgery before or after-Activity date',
+            'surgery before or after-Actual activity',
+            'id-hushed_internalpatientid'], axis=1, inplace=True)
+    # N -lymph nodes mark (TNM)
 
     return X
 
@@ -384,7 +384,6 @@ if __name__ == '__main__':
     y_tumor.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
 
     print({f: original_data[f].unique().size for f in original_data.columns})
-    print()
 
     d = {}
 
