@@ -81,19 +81,19 @@ def is_in_str(s: str, words: set):
     return False
 
 
-
 def KI67_score(x):
-    if(0<x<=5):
+    if (0 < x <= 5):
         return 1
-    if(5<x<10):
+    if (5 < x < 10):
         return 2
-    if(10<=x<50):
+    if (10 <= x < 50):
         return 3
-    if(50<=x<=100):
+    if (50 <= x <= 100):
         return 4
     else:
         return 0
-      
+
+
 def KI67_pre(x):
     for sub in ['Sc', 'sc']:
         out = x.find(sub)
@@ -102,18 +102,20 @@ def KI67_pre(x):
                 if x[i].isdigit():
                     return int(x[i])
     sep = ['-', ' ', '=']
-    x = "".join(filter(lambda c: c in sep or c.isdigit(), x)).replace('-', ' ').replace('=', ' ')
+    x = "".join(filter(lambda c: c in sep or c.isdigit(), x)).replace('-',
+                                                                      ' ').replace(
+        '=', ' ')
     x = [int(s) for s in x.split(' ') if s.isdigit()]
     if x == []:
         return 0
     x = statistics.mean(x)
-    if(0<x<100):
+    if (0 < x < 100):
         return x
     else:
         return 0
-      
-def how_much_per_unique(x, d: dict):
 
+
+def how_much_per_unique(x, d: dict):
     if x in d:
         d[x] += 1
     else:
@@ -159,7 +161,8 @@ def preprocess(df: pd.DataFrame):
                                     "Histopatological degree"])
 
     # Her2 preprocessing
-    set_pos = {"po", "PO", "Po", "os", "2", "3", "+", "חיובי", 'בינוני', "Inter",
+    set_pos = {"po", "PO", "Po", "os", "2", "3", "+", "חיובי", 'בינוני',
+               "Inter",
                "Indeter", "indeter", "inter"}
     set_neg = {"ne", "Ne", "NE", "eg", "no", "0", "1", "-", "שלילי"}
 
@@ -175,7 +178,6 @@ def preprocess(df: pd.DataFrame):
     X = X[X["Age"] < 120]
     X = X[0 < X["Age"]]
 
-
     # Basic stage preprocessing
     X["Basic stage"] = X["Basic stage"].replace(
         {'Null': 0, 'c - Clinical': 1, 'p - Pathological': 2,
@@ -186,7 +188,8 @@ def preprocess(df: pd.DataFrame):
     X["KI67 protein"] = X["KI67 protein"].astype(str)
 
     whitelist = ['-', ' ', '=']
-    X["KI67 protein"] = X["KI67 protein"].apply(lambda x: KI67_score(KI67_pre(x)))
+    X["KI67 protein"] = X["KI67 protein"].apply(
+        lambda x: KI67_score(KI67_pre(x)))
     print(sum(X["KI67 protein"] == 0) / X["KI67 protein"].size)
     print(X["KI67 protein"].unique())
 
@@ -216,23 +219,13 @@ if __name__ == '__main__':
 
     for f in original_data.columns:
         print(f)
-    # print(original_data["KI67 protein"].unique())
 
-    # print({f: original_data[f].unique().size for f in original_data.columns})
-    # print(set(original_data["Histological diagnosis"]))
-
-
-
-    d = {}
-    original_data["KI67 protein"].apply(lambda x: how_much(x, d))
-    
     print({f: original_data[f].unique().size for f in original_data.columns})
     print()
 
     d = {}
     original_data["Lymphatic penetration"].apply(
         lambda x: how_much_per_unique(x, d))
-
     print(d)
 
     X = preprocess(original_data)
