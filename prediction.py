@@ -211,13 +211,13 @@ def metastases_mark_pre(x):
 
 def Tumor_mark_pre(x):
     d = {'T2': 2, 'T4': 4, 'T1c': 1, 'T1b': 1, 'MF': 0,
-         'T1': 1, 'Tis': 1061, 'T1mic': 1, 'Tx': 0, 'T3': 3, 'T1a': 1,
-         'Not yet Established': 0, 'T0': 0, 'T3c': 3, 'T2a': 2, 'T4d': 4,
+         'T1': 1, 'Tis': 'null', 'T1mic': 1, 'Tx': 0, 'T3': 3, 'T1a': 1,
+         'Not yet Established': 'null', 'T0': 0, 'T3c': 3, 'T2a': 2, 'T4d': 4,
          'T4c': 4, 'T4a': 4, 'T3b': 3, 'T2b': 2, 'T4b': 4, 'T3d': 3}
     if x in d:
         return d[x]
     else:
-        return 0
+        return 'null'
 
 def Stage_pre(x):
     if type(x) == str:
@@ -296,10 +296,19 @@ def preprocess(df: pd.DataFrame):
     # Positive nodes
     X["Positive nodes"] = X["Positive nodes"].fillna(0)
 
+    # Tumor depth and width
+
+    X["Tumor depth"] = X["Tumor depth"].fillna(0)
+    X["Tumor width"] = X["Tumor width"].fillna(0)
+
+
     # T -Tumor mark (TNM)
     X["T -Tumor mark (TNM)"] = X["T -Tumor mark (TNM)"].apply(
         lambda x: Tumor_mark_pre(x))
 
+    for f in X.columns:
+        if(sum(X[f].isnull())):
+            print(f)
     return X
 
 
@@ -322,9 +331,10 @@ if __name__ == '__main__':
     print()
 
     d = {}
-    original_data["Surgery name1"].apply(
+
+    original_data["Tumor depth"].apply(
         lambda x: how_much_per_unique(x, d))
-    print(d)
+    # print(d)
 
     X = preprocess(original_data)
 
