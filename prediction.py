@@ -9,9 +9,10 @@ import plotly.graph_objects as go
 from datetime import datetime
 from sklearn.tree import DecisionTreeClassifier
 
-
-positive_sign = ['extensive', 'yes', '(+)', 'ye', 'Ye', 'po', 'PO', 'Po', 'os', 'high', 'High', 'HIGH', '100']
-negative_sign = ['No', '(-)', 'NO', 'no', 'NE','Ne', 'ne','eg','ng','Ng','NG', "שלילי", 'Low', 'low', 'LOW' ]
+positive_sign = ['extensive', 'yes', '(+)', 'ye', 'Ye', 'po', 'PO', 'Po', 'os',
+                 'high', 'High', 'HIGH', '100']
+negative_sign = ['No', '(-)', 'NO', 'no', 'NE', 'Ne', 'ne', 'eg', 'ng', 'Ng',
+                 'NG', "שלילי", 'Low', 'low', 'LOW']
 
 indeterminate_sign = ['בינוני', "Inter", "Indeter", "indeter", "inter"]
 
@@ -96,7 +97,8 @@ def her_2_pre(x):
 
 def er_pr_pre(x):
     global positive_sign, negative_sign, indeterminate_sign
-    pos_lst = positive_sign + indeterminate_sign + ["+", "3", "4", "90","80","70"]
+    pos_lst = positive_sign + indeterminate_sign + ["+", "3", "4", "90", "80",
+                                                    "70"]
     neg_lst = negative_sign + ["-"]
     x = str(x)
     for p in pos_lst:
@@ -106,6 +108,7 @@ def er_pr_pre(x):
         if n in x:
             return "neg"
     return "null"
+
 
 def KI67_score(x):
     if 0 < x <= 5:
@@ -162,12 +165,12 @@ def how_much_per_unique(x, d: dict):
 
 def Lymphatic_penetration_pre(x):
     if x[:2] == "L0":
-        return 0
+        return '0'
     elif x[:2] == "L1" or x[:2] == "LI":
         return 1
     elif x[:2] == "L2":
-        return 2
-    return None
+        return '2'
+    return 'null'
 
 
 def Lymphovascular_invasion_pre(x):
@@ -222,12 +225,14 @@ def Tumor_mark_pre(x):
     else:
         return 0
 
+
 def Stage_pre(x):
     if type(x) == str:
-        x =  "".join(filter(lambda c: c.isdigit(), x))
-    if x in ["0","1","2","3","4"]:
+        x = "".join(filter(lambda c: c.isdigit(), x))
+    if x in ["0", "1", "2", "3", "4"]:
         return x
     return "null"
+
 
 def side(x):
     if x['both']:
@@ -265,7 +270,7 @@ def preprocess(df: pd.DataFrame):
     df["er"] = df["er"].apply(lambda x: er_pr_pre(x))
     df["pr"] = df["pr"].apply(lambda x: er_pr_pre(x))
 
-    #Stage
+    # Stage
     df["Stage"] = df["Stage"].apply(lambda x: Stage_pre(x))
 
     # make categorical
@@ -275,21 +280,20 @@ def preprocess(df: pd.DataFrame):
                                     "Ivi -Lymphovascular invasion",
                                     "Histological diagnosis",
                                     "M -metastases mark (TNM)",
-
+                                    "Lymphatic penetration",
                                     "Her2",
                                     "er",
                                     "pr",
                                     "Stage"])
 
-    # Side
-    redundant_dummy = pd.get_dummies(X["Side"])
-    redundant_dummy.rename(
-        columns={"ימין": "r", "שמאל": "l", "דו צדדי": "both"}, inplace=True)
-    redundant_dummy.apply(side, axis=1)
-
-    del X["Side"]
-    X = pd.concat([redundant_dummy[["l", "r"]], X])
-
+    # # Side
+    # redundant_dummy = pd.get_dummies(X["Side"])
+    # redundant_dummy.rename(
+    #     columns={"ימין": "r", "שמאל": "l", "דו צדדי": "both"}, inplace=True)
+    # redundant_dummy.apply(side, axis=1)
+    #
+    # del X["Side"]
+    # X = pd.concat([redundant_dummy[["l", "r"]], X])
 
     # Age  preprocessing
     X = X[X["Age"] < 120]
@@ -301,6 +305,7 @@ def preprocess(df: pd.DataFrame):
          'r - Reccurent': 3})
 
     # KI67 protein preprocessing
+    # print(sum(X["KI67 protein"].apply(lambda x: 1 if validate(x) else 0)))
     X["KI67 protein"] = X["KI67 protein"].astype(str)
     X["KI67 protein"] = X["KI67 protein"].apply(
         lambda x: KI67_score(KI67_pre(x)))
@@ -320,6 +325,14 @@ def preprocess(df: pd.DataFrame):
     # T -Tumor mark (TNM)
     X["T -Tumor mark (TNM)"] = X["T -Tumor mark (TNM)"].apply(
         lambda x: Tumor_mark_pre(x))
+
+    X.drop(
+        ['Side', 'N -lymph nodes mark (TNM)', 'Tumor depth', 'Tumor width',
+         'User Name', 'Surgery date1', 'Surgery date2',
+         'Surgery date3', 'Surgery name1', 'Surgery name2', 'Surgery name3',
+         'Surgery sum', 'surgery before or after-Activity date',
+         'surgery before or after-Actual activity',
+         'id-hushed_internalpatientid'], axis=1, inplace=True)
 
     return X
 
@@ -348,12 +361,11 @@ if __name__ == '__main__':
 
     d = {}
 
-    original_data["Surgery sum"].apply(
-        lambda x: how_much_per_unique(x, d))
-    print(d)
+    # original_data["Surgery sum"].apply(
+    #     lambda x: how_much_per_unique(x, d))
+    # print(d)
 
     X = preprocess(original_data)
-
 
     # feature_evaluation(X[["Age", "Her2", "Basic stage"]], y_tumor)
     print("this is me")
