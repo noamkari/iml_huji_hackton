@@ -9,8 +9,10 @@ import plotly.graph_objects as go
 from datetime import datetime
 from sklearn.tree import DecisionTreeClassifier
 
-positive_sign = ['extensive', 'yes', '(+)', 'ye', 'Ye', 'po', 'PO', 'Po', 'os']
-negative_sign = ['No', '(-)', 'NO', 'no', 'NE', 'Ne', 'ne', 'eg', "שלילי"]
+
+positive_sign = ['extensive', 'yes', '(+)', 'ye', 'Ye', 'po', 'PO', 'Po', 'os', 'high', 'High', 'HIGH', '100']
+negative_sign = ['No', '(-)', 'NO', 'no', 'NE','Ne', 'ne','eg','ng','Ng','NG', "שלילי", 'Low', 'low', 'LOW' ]
+
 indeterminate_sign = ['בינוני', "Inter", "Indeter", "indeter", "inter"]
 
 
@@ -91,6 +93,19 @@ def her_2_pre(x):
 
     return "null"
 
+
+def er_pr_pre(x):
+    global positive_sign, negative_sign, indeterminate_sign
+    pos_lst = positive_sign + indeterminate_sign + ["+", "3", "4", "90","80","70"]
+    neg_lst = negative_sign + ["-"]
+    x = str(x)
+    for p in pos_lst:
+        if p in x:
+            return "pos"
+    for n in neg_lst:
+        if n in x:
+            return "neg"
+    return "null"
 
 def KI67_score(x):
     if 0 < x <= 5:
@@ -207,6 +222,12 @@ def Tumor_mark_pre(x):
     else:
         return 0
 
+def Stage_pre(x):
+    if type(x) == str:
+        x =  "".join(filter(lambda c: c.isdigit(), x))
+    if x in ["0","1","2","3","4"]:
+        return x
+    return "null"
 
 def side(x):
     if x['both']:
@@ -240,6 +261,13 @@ def preprocess(df: pd.DataFrame):
     df["M -metastases mark (TNM)"] = df["M -metastases mark (TNM)"].apply(
         lambda x: metastases_mark_pre(x))
 
+    # er
+    df["er"] = df["er"].apply(lambda x: er_pr_pre(x))
+    df["pr"] = df["pr"].apply(lambda x: er_pr_pre(x))
+
+    #Stage
+    df["Stage"] = df["Stage"].apply(lambda x: Stage_pre(x))
+
     # make categorical
     X = pd.get_dummies(df, columns=[" Hospital",
                                     " Form Name",
@@ -247,7 +275,11 @@ def preprocess(df: pd.DataFrame):
                                     "Ivi -Lymphovascular invasion",
                                     "Histological diagnosis",
                                     "M -metastases mark (TNM)",
-                                    "Her2"])
+
+                                    "Her2",
+                                    "er",
+                                    "pr",
+                                    "Stage"])
 
     # Side
     redundant_dummy = pd.get_dummies(X["Side"])
@@ -257,6 +289,7 @@ def preprocess(df: pd.DataFrame):
 
     del X["Side"]
     X = pd.concat([redundant_dummy[["l", "r"]], X])
+
 
     # Age  preprocessing
     X = X[X["Age"] < 120]
@@ -268,7 +301,6 @@ def preprocess(df: pd.DataFrame):
          'r - Reccurent': 3})
 
     # KI67 protein preprocessing
-    # print(sum(X["KI67 protein"].apply(lambda x: 1 if validate(x) else 0)))
     X["KI67 protein"] = X["KI67 protein"].astype(str)
     X["KI67 protein"] = X["KI67 protein"].apply(
         lambda x: KI67_score(KI67_pre(x)))
@@ -315,6 +347,7 @@ if __name__ == '__main__':
     print()
 
     d = {}
+
     original_data["Surgery sum"].apply(
         lambda x: how_much_per_unique(x, d))
     print(d)
