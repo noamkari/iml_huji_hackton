@@ -1,3 +1,5 @@
+import statistics
+
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.model_selection import train_test_split
 import sys
@@ -76,25 +78,34 @@ def is_in_str(s: str, words: set):
         if s.find(w) != -1:
             return True
     return False
-
+def KI67_pre(x):
+    sep = ['-', ' ', '=']
+    x = "".join(filter(lambda c: c in sep or c.isdigit(), x)).replace('-', ' ').replace('=', ' ')
+    x = [int(s) for s in x.split(' ') if s.isdigit()]
+    if x == []:
+        return 0
+    x = statistics.mean(x)
+    if(0 < x < 100):
+        return x
+    else:
+        return 0
 
 def preprocess(df: pd.DataFrame):
     # make categorical from Hospital and Form Name
     X = pd.get_dummies(df, columns=[" Hospital", " Form Name"])
 
     # Her2 preprocessing
-    set_pos = {"po", "PO", "Po", "2", "3", "+", "חיובי", 'בינוני', "Inter",
+    set_pos = {"po", "PO", "Po", "os", "2", "3", "+", "חיובי", 'בינוני', "Inter",
                "Indeter", "indeter", "inter"}
     set_neg = {"ne", "Ne", "NE", "eg", "no", "0", "1", "-", "שלילי"}
 
     X["Her2"] = X["Her2"].astype(str)
-    X["Her2"] = X["Her2"].apply(lambda x: 1 if is_in_str(x, set_pos) else x)
-    X["Her2"] = X["Her2"].apply(lambda x: 0 if is_in_str(x, set_neg) else x)
-    X["Her2"] = X["Her2"].apply(lambda x: 0 if type(x) == str else x)
+    # X["Her2"] = X["Her2"].apply(lambda x: 1 if is_in_str(x, set_pos) else x)
+    # X["Her2"] = X["Her2"].apply(lambda x: 0 if is_in_str(x, set_neg) else x)
+    # X["Her2"] = X["Her2"].apply(lambda x: 0 if type(x) == str else x)
 
     # more simple but same i think todo chek with elad
-    a = df["Her2"].apply(lambda x: 1 if is_in_str(x, set_pos) else 0)
-    val = (set(a == X["Her2"]))
+    X["Her2"] = X["Her2"].apply(lambda x: 1 if is_in_str(x, set_pos) else 0)
 
     # Age  preprocessing FIXME buggy, chek what need to do (remove line, get mean)
     # X = X[0 < X["Age"] < 120]
@@ -104,6 +115,25 @@ def preprocess(df: pd.DataFrame):
         {'Null': 0, 'c - Clinical': 1, 'p - Pathological': 2,
          'r - Reccurent': 3})
 
+    # KI67 protein preprocessing
+    X["KI67 protein"] = X["KI67 protein"].astype(str)
+    whitelist = ['-', ' ', '=']
+    X["KI67 protein"] = X["KI67 protein"].apply(lambda x: KI67_pre(x))
+    print(sum(X["KI67 protein"] == 0) / X["KI67 protein"].size)
+    print(X["KI67 protein"].unique())
+
+    # print("".join(filter(lambda c: c in whitelist or c.isdigit(), "20-40%")))
+    # print(KI67_pre('Score 3 (10-49%)'))
+
+
+    # X["KI67 protein"] = X["KI67 protein"].apply(lambda x: "".join(filter(lambda c: c in whitelist or c.isdigit(), x)))
+    # X["KI67 protein"] = X["KI67 protein"].apply(lambda x: [int(s) for s in x.split(whitelist) if s.isdigit()])
+    # X["KI67 protein"] = X["KI67 protein"].apply(lambda x: statistics.mean(x))
+    # print(X["KI67 protein"].unique())
+    # X["KI67 protein"] = X["KI67 protein"].apply(lambda x: x if 0 < x < 100 else 0)
+    # print(X["KI67 protein"].unique())
+
+
     return X
 
 
@@ -111,7 +141,7 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     # Load data and preprocess
-    data_path, y_location_of_distal, y_tumor_path = sys.argv[1:]
+    # data_path, y_location_of_distal, y_tumor_path = sys.argv[1:]
 
     original_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
     original_data.rename(columns=lambda x: x.replace('אבחנה-', ''),
@@ -120,10 +150,14 @@ if __name__ == '__main__':
     y_tumor = pd.read_csv("./Mission 2 - Breast Cancer/train.labels.1.csv")
     y_tumor.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
 
-    print({f: original_data[f].unique().size for f in original_data.columns})
-    print(set(original_data["Histological diagnosis"]))
+    for f in original_data.columns:
+        print(f)
+    print(original_data["KI67 protein"].unique())
+
+    # print({f: original_data[f].unique().size for f in original_data.columns})
+    # print(set(original_data["Histological diagnosis"]))
 
     X = preprocess(original_data)
 
-    feature_evaluation(X[["Age", "Her2", "Basic stage"]], y_tumor)
+    # feature_evaluation(X[["Age", "Her2", "Basic stage"]], y_tumor)
     print("this is me")
