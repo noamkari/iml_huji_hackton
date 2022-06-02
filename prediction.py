@@ -13,6 +13,7 @@ positive_sign = ['extensive', 'yes', '(+)', 'ye', 'Ye', 'po', 'PO', 'Po', 'os', 
 negative_sign = ['No', '(-)', 'NO', 'no', 'NE','Ne', 'ne','eg','ng','Ng','NG', "שלילי", 'Low', 'low', 'LOW' ]
 indeterminate_sign = ['בינוני', "Inter", "Indeter", "indeter", "inter"]
 
+
 def evaluate_and_export(estimator, X: np.ndarray, filename: str):
     """
     Export to specified file the prediction results of given estimator on given testset.
@@ -77,7 +78,7 @@ def create_scatter_for_feature(X: pd.DataFrame, y: np.array, title,
 
 def her_2_pre(x):
     global positive_sign, negative_sign, indeterminate_sign
-    pos_lst = positive_sign + indeterminate_sign +  ["2,3", "+"]
+    pos_lst = positive_sign + indeterminate_sign + ["2,3", "+"]
     neg_lst = negative_sign + ["0", "1", "-"]
     x = str(x)
     for p in pos_lst:
@@ -93,7 +94,8 @@ def her_2_pre(x):
 
 def er_pr_pre(x):
     global positive_sign, negative_sign, indeterminate_sign
-    pos_lst = positive_sign + indeterminate_sign + ["+", "3", "4", "90","80","70"]
+    pos_lst = positive_sign + indeterminate_sign + ["+", "3", "4", "90", "80",
+                                                    "70"]
     neg_lst = negative_sign + ["-"]
     x = str(x)
     for p in pos_lst:
@@ -104,14 +106,15 @@ def er_pr_pre(x):
             return "neg"
     return "null"
 
+
 def KI67_score(x):
-    if (0 < x <= 5):
+    if 0 < x <= 5:
         return 1
-    if (5 < x < 10):
+    if 5 < x < 10:
         return 2
-    if (10 <= x < 50):
+    if 10 <= x < 50:
         return 3
-    if (50 <= x <= 100):
+    if 50 <= x <= 100:
         return 4
     else:
         return 0
@@ -132,7 +135,7 @@ def KI67_pre(x):
     if x == []:
         return 0
     x = statistics.mean(x)
-    if (0 < x < 100):
+    if 0 < x < 100:
         return x
     else:
         return 0
@@ -159,19 +162,19 @@ def how_much_per_unique(x, d: dict):
 
 def Lymphatic_penetration_pre(x):
     if x[:2] == "L0":
-        return 0
+        return '0'
     elif x[:2] == "L1" or x[:2] == "LI":
         return 1
     elif x[:2] == "L2":
-        return 2
-    return None
+        return '2'
+    return 'null'
 
 
 def Lymphovascular_invasion_pre(x):
     x = str(x)
     global positive_sign, negative_sign, indeterminate_sign
-    lst_of_pos = positive_sign +["+"]
-    lst_of_neg = negative_sign +["-"]
+    lst_of_pos = positive_sign + ["+"]
+    lst_of_neg = negative_sign + ["-"]
     very_danger = 'MICROPAPILLARY VARIANT'
 
     if x == very_danger:
@@ -219,12 +222,20 @@ def Tumor_mark_pre(x):
     else:
         return 'null'
 
+
 def Stage_pre(x):
     if type(x) == str:
-        x =  "".join(filter(lambda c: c.isdigit(), x))
-    if x in ["0","1","2","3","4"]:
+        x = "".join(filter(lambda c: c.isdigit(), x))
+    if x in ["0", "1", "2", "3", "4"]:
         return x
     return "null"
+
+
+def side(x):
+    if x['both']:
+        x['l'] = 1
+        x['r'] = 1
+
 
 def preprocess(df: pd.DataFrame):
     # Histological diagnosis
@@ -256,7 +267,7 @@ def preprocess(df: pd.DataFrame):
     df["er"] = df["er"].apply(lambda x: er_pr_pre(x))
     df["pr"] = df["pr"].apply(lambda x: er_pr_pre(x))
 
-    #Stage
+    # Stage
     df["Stage"] = df["Stage"].apply(lambda x: Stage_pre(x))
 
     # make categorical
@@ -266,10 +277,21 @@ def preprocess(df: pd.DataFrame):
                                     "Ivi -Lymphovascular invasion",
                                     "Histological diagnosis",
                                     "M -metastases mark (TNM)",
+                                    "Lymphatic penetration",
                                     "Her2",
                                     "er",
                                     "pr",
                                     "Stage"])
+
+    # # Side
+    # redundant_dummy = pd.get_dummies(X["Side"])
+    # redundant_dummy.rename(
+    #     columns={"ימין": "r", "שמאל": "l", "דו צדדי": "both"}, inplace=True)
+    # redundant_dummy.apply(side, axis=1)
+    #
+    # del X["Side"]
+    # X = pd.concat([redundant_dummy[["l", "r"]], X])
+
     # Age  preprocessing
     X = X[X["Age"] < 120]
     X = X[0 < X["Age"]]
@@ -280,6 +302,7 @@ def preprocess(df: pd.DataFrame):
          'r - Reccurent': 3})
 
     # KI67 protein preprocessing
+    # print(sum(X["KI67 protein"].apply(lambda x: 1 if validate(x) else 0)))
     X["KI67 protein"] = X["KI67 protein"].astype(str)
     X["KI67 protein"] = X["KI67 protein"].apply(
         lambda x: KI67_score(KI67_pre(x)))
@@ -296,18 +319,19 @@ def preprocess(df: pd.DataFrame):
     # Positive nodes
     X["Positive nodes"] = X["Positive nodes"].fillna(0)
 
-    # Tumor depth and width
-
-    X["Tumor depth"] = X["Tumor depth"].fillna(0)
-    X["Tumor width"] = X["Tumor width"].fillna(0)
-
-
     # T -Tumor mark (TNM)
     X["T -Tumor mark (TNM)"] = X["T -Tumor mark (TNM)"].apply(
         lambda x: Tumor_mark_pre(x))
 
+    X.drop(
+        ['Side', 'N -lymph nodes mark (TNM)', 'Tumor depth', 'Tumor width',
+         'User Name', 'Surgery date1', 'Surgery date2',
+         'Surgery date3', 'Surgery name1', 'Surgery name2', 'Surgery name3',
+         'Surgery sum', 'surgery before or after-Activity date',
+         'surgery before or after-Actual activity',
+         'id-hushed_internalpatientid'], axis=1, inplace=True)
     for f in X.columns:
-        if(sum(X[f].isnull())):
+        if (sum(X[f].isnull())):
             print(f)
     return X
 
@@ -316,6 +340,10 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     # Load data and preprocess
+
+    full_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
+    full_data.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
+
     # data_path, y_location_of_distal, y_tumor_path = sys.argv[1:]
 
     original_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
