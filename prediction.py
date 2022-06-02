@@ -10,7 +10,7 @@ from sklearn.tree import DecisionTreeClassifier
 import seaborn as sn
 import matplotlib.pyplot as plt
 
-def load_data(filename: str):
+def     load_data(filename: str):
     """
     Load  dataset
     Parameters
@@ -115,7 +115,7 @@ def preprocess(df: pd.DataFrame):
     set_pos = {"po", "PO", "Po", "2", "3", "+", "חיובי", 'בינוני', "Inter",
                "Indeter", "indeter", "inter"}
     set_neg = {"ne", "Ne", "NE", "eg", "no", "0", "1", "-", "שלילי"}
-
+    print(X.columns)
     X["Her2"] = X["Her2"].astype(str)
     X["Her2"] = X["Her2"].apply(lambda x: 1 if is_in_str(x, set_pos) else x)
     X["Her2"] = X["Her2"].apply(lambda x: 0 if is_in_str(x, set_neg) else x)
@@ -143,12 +143,12 @@ if __name__ == '__main__':
     full_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
     # for f in full_data.columns:
     #     f.replace('-הנחבא','')
-    full_data.rename(columns=lambda x: x.replace('אבחנה_', ''), inplace=True)
+    full_data.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
     corrMatrix = full_data.corr(method = 'pearson')
     print(corrMatrix)
     sn.heatmap(corrMatrix, annot=True)
     plt.show()
-    full_data['Basic stage'].corr(full_data[])
+    # full_data['Basic stage'].corr(full_data[])
     X, y = load_data("test.csv")
     train_X, test_X, train_y, test_y = train_test_split(X, y)
     data_path, y_location_of_distal, y_tumor_path = sys.argv[1:]
