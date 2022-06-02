@@ -18,11 +18,13 @@ if __name__ == '__main__':
     full_data.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
     labels = pd.read_csv("./Mission 2 - Breast Cancer/train.labels.0.csv")
     classified_labels = np.where(labels == '[]', 0, 1)
+
     processed_data = preprocess(full_data).drop(['Side', 'User Name','Stage','Surgery date1','Surgery date2',
                                                  'Surgery date3','Surgery name1','Surgery name2','Surgery name3',
                                                  'Surgery sum','surgery before or after-Activity date',
                                                  'surgery before or after-Actual activity',
                                                  'id-hushed_internalpatientid'],axis=1)
+    
     train_X, test_X, train_y, test_y = train_test_split(processed_data,labels)
     # train_X, test_X = processed_data[:int(processed_data.shape[0]*0.75)],processed_data[int(processed_data.shape[0]*0.75):]
     # train_y, test_y = labels[:int(labels.size*0.75)], labels[int(labels.size*0.75):]
