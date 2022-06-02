@@ -4,6 +4,7 @@ import sys
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+from datetime import datetime
 from sklearn.tree import DecisionTreeClassifier
 
 
@@ -78,34 +79,50 @@ def is_in_str(s: str, words: set):
     return False
 
 
-from datetime import date
-from datetime import datetime
-
-
-def proces_time(x):
-    today = datetime.strptime("6/2/2022", '%d/%m/%Y')
-    print(type(x))
-    x = datetime.strptime(x[:10], '%d/%m/%Y')
-    print(type(x))
-    print(type((x - today).days))
-
-
-def how_much(x, d: dict):
+def how_much_per_unique(x, d: dict):
     if x in d:
         d[x] += 1
     else:
         d[x] = 0
 
 
-def preprocess(df: pd.DataFrame):
-    # cur_date
+def Lymphatic_penetration_pre(x):
+    if x[:2] == "L0":
+        return 0
+    elif x[:2] == "L1" or x[:2] == "LI":
+        return 1
+    elif x[:2] == "L2":
+        return 2
+    return None
 
+
+def find_score(x: str):
+    for sub in ['Sc', 'sc']:
+        out = x.find(sub)
+
+        if out != -1:
+            for i in range(out, len(x)):
+                if x[i].isdigit():
+                    return x[i]
+                elif x[i] == 'I':
+                    return 1
+    return None
+
+
+def preprocess(df: pd.DataFrame):
+    # Lymphatic penetration
+    df["Lymphatic penetration"] = df["Lymphatic penetration"].apply(
+        lambda x: Lymphatic_penetration_pre(x))
+
+    # cur_date
     today = datetime.strptime("6/2/2022", '%d/%m/%Y')
     df["Diagnosis date"] = df["Diagnosis date"].apply(
-        lambda x: (datetime.strptime(x[:10], '%d/%m/%Y') - today).days)
+        lambda x: (datetime.strptime(x[:10], '%d/%m/%Y') - today).days * -1)
 
     # make categorical from Hospital and Form Name
-    X = pd.get_dummies(df, columns=[" Hospital", " Form Name"])
+    X = pd.get_dummies(df, columns=[" Hospital",
+                                    " Form Name",
+                                    "Histopatological degree"])
 
     # Her2 preprocessing
     set_pos = {"po", "PO", "Po", "2", "3", "+", "חיובי", 'בינוני', "Inter",
@@ -154,10 +171,11 @@ if __name__ == '__main__':
     y_tumor.rename(columns=lambda x: x.replace('אבחנה-', ''), inplace=True)
 
     print({f: original_data[f].unique().size for f in original_data.columns})
-    print(set(original_data["Histological diagnosis"]))
+    print()
 
     d = {}
-    original_data["Histological diagnosis"].apply(lambda x: how_much(x, d))
+    original_data["Lymphatic penetration"].apply(
+        lambda x: how_much_per_unique(x, d))
     print(d)
 
     X = preprocess(original_data)
