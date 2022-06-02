@@ -10,32 +10,32 @@ from sklearn.tree import DecisionTreeClassifier
 import seaborn as sn
 import matplotlib.pyplot as plt
 
-def     load_data(filename: str):
-    """
-    Load  dataset
-    Parameters
-    ----------
-    filename: str
-        Path to  dataset
-    Returns
-    -------
-    Design matrix and response vector in either of the following formats:
-    1) Single dataframe with last column representing the response
-    2) Tuple of pandas.DataFrame and Series
-    3) Tuple of ndarray of shape (n_samples, n_features) and ndarray of shape (n_samples,)
-    """
-    # TODO - replace below code with any desired preprocessing
-    full_data = pd.read_csv(filename).dropna().drop_duplicates()
-    features = full_data[["h_booking_id",
-                          "hotel_id",
-                          "accommadation_type_name",
-                          "hotel_star_rating",
-                          "customer_nationality"]]
-    labels = full_data["cancellation_datetime"]
-
-    return features, labels
-
-
+# def load_data(filename: str):
+#     """
+#     Load  dataset
+#           Path to  dataset
+#     Returns
+#     -------
+#     Design matrix and response vector in either of the following formats:
+#     1) Single dataframe with last column representing the response
+#     2) Tuple of pandas.DataFrame and Series
+#     3) Tuple of ndarray of shape (n_samples, n_features) and ndarray of shape (n_samples,)
+#     """
+#     # TODO - replace below code with any desired preprocessing
+#     full_data = pd.read_csv(filename).dropna().drop_duplicates()
+#     features = full_data[["h_booking_id",
+#                           "hotel_id",
+#                           "accommadation_type_name",
+#                           "hotel_star_rating",
+#                           "customer_nationality"]]
+#     labels = full_data["cancellation_datetime"]
+#
+#     return features, labelsParameters
+#     ----------
+#     filename: str
+#
+#
+#
 def evaluate_and_export(estimator, X: np.ndarray, filename: str):
     """
     Export to specified file the prediction results of given estimator on given testset.
@@ -180,9 +180,7 @@ if __name__ == '__main__':
     sn.heatmap(corrMatrix, annot=True)
     plt.show()
     # full_data['Basic stage'].corr(full_data[])
-    X, y = load_data("test.csv")
-    train_X, test_X, train_y, test_y = train_test_split(X, y)
-    data_path, y_location_of_distal, y_tumor_path = sys.argv[1:]
+    # data_path, y_location_of_distal, y_tumor_path = sys.argv[1:]
 
     original_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
 
@@ -196,10 +194,10 @@ if __name__ == '__main__':
     print({f: original_data[f].unique().size for f in original_data.columns})
     print(set(original_data["Histological diagnosis"]))
 
+    print("Histological diagnosis")
     d = {}
     original_data["Histological diagnosis"].apply(lambda x: how_much(x, d))
     print(d)
 
     X = preprocess(original_data)
     feature_evaluation(X[["Age", "Her2", "Basic stage"]], y_tumor)
-    print("this is me")
