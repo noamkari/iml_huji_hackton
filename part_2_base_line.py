@@ -64,7 +64,6 @@ def split_data(X: pd.DataFrame, y: pd.DataFrame):
 
 
 def run_tumor_size_pred(train_data, labels, test_data):
-
     fitted_cls = fit_classifier(train_data, labels)
     have_cancer_train_X, have_cancer_train_y = split_data(train_data, labels)
 

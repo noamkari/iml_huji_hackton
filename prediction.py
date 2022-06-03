@@ -1,14 +1,9 @@
 import statistics
+from datetime import datetime
 
-import sklearn
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.model_selection import train_test_split
-import sys
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from datetime import datetime
-from sklearn.tree import DecisionTreeClassifier
 
 from part_1_base_line import run_predicting_metastases
 from part_2_base_line import run_tumor_size_pred
@@ -255,18 +250,6 @@ def lymph_nodes_mark_pre(x):
     return "null"
 
 
-def preprocess(df: pd.DataFrame, labels):
-    labels_name = labels.columns.values[0]
-    df = df.join(labels)
-    df.drop(
-        [
-            'User Name', 'Surgery date1', 'Surgery date2',
-            'Surgery date3', 'Surgery name1', 'Surgery name2', 'Surgery name3',
-            'surgery before or after-Activity date',
-            'surgery before or after-Actual activity'
-        ], axis=1, inplace=True)
-
-
 def preprocess(df: pd.DataFrame, labels=pd.DataFrame()):
     if labels.empty:
         labels = pd.DataFrame(np.zeros(df.shape[0]))
@@ -412,11 +395,32 @@ def preprocess(df: pd.DataFrame, labels=pd.DataFrame()):
         if (sum(X[f].isnull())):
             print(f)
 
+    id = X['id-hushed_internalpatientid']
     y = X[labels_name]
+
     del X[labels_name]
     del X[' Form Name']
     del X['id-hushed_internalpatientid']
-    return X, pd.DataFrame(y)
+    return X, pd.DataFrame(y), id
+
+
+def h(x, d, pred_name):
+    d[x["id-hushed_internalpatientid"]] = x[pred_name]
+
+
+def find_current_pred(df: pd.DataFrame, X: pd.DataFrame, pred: np.array,
+                      id: pd.DataFrame):
+    pred = pd.DataFrame(pred)
+    pred.rename(columns=lambda x: "pred", inplace=True)
+
+    a = X.join(pred)
+    a = a.join(id)
+
+    d = {}
+    a.apply(lambda x: h(x, d, "pred"), axis=1)
+
+    pred = df["id-hushed_internalpatientid"]
+    return pred.apply(lambda x: d[x])
 
 
 if __name__ == '__main__':
@@ -428,7 +432,8 @@ if __name__ == '__main__':
 
     # data_path, y_location_of_distal, y_tumor_path = sys.argv[1:]
 
-    original_data = pd.read_csv("./Mission 2 - Breast Cancer/train.feats.csv")
+    original_data = pd.read_csv(
+        "./Mission 2 - Breast Cancer/train.feats.csv")
 
     # remove heb prefix
     original_data.rename(columns=lambda x: x.replace('אבחנה-', ''),
@@ -443,45 +448,58 @@ if __name__ == '__main__':
 
     a = set(original_data['id-hushed_internalpatientid'])
 
-    d = {}
-    original_data["surgery before or after-Actual activity"].apply(
-        lambda x: how_much_per_unique(x, d))
-    print(d)
+    # d = {}
+    # original_data["surgery before or after-Actual activity"].apply(
+    #     lambda x: how_much_per_unique(x, d))
+    # print(d)
 
-    X_metastases, y_metastases = preprocess(original_data, y_metastases)
-    X_tumor, y_tumor = preprocess(original_data, y_tumor)
+    X_metastases, y_metastases, id = preprocess(original_data,
+                                                y_metastases)
+    X_tumor, y_tumor, id = preprocess(original_data, y_tumor)
 
     test_data = pd.read_csv("./Mission 2 - Breast Cancer/test.feats.csv")
-    processed_test_data = preprocess(test_data)[0]
+    processed_test_data, y, id_data = preprocess(test_data)
+
+    processed_test_data_part_2 = processed_test_data.copy(deep=True)
 
     # Get missing columns in the training test
-    missing_cols = set(X_metastases.columns) - set(processed_test_data.columns)
+    missing_cols = set(X_metastases.columns) - set(
+        processed_test_data.columns)
     # Add a missing column in test set with default value equal to 0
     for c in missing_cols:
         processed_test_data[c] = 0
     # Ensure the order of column in the test set is in the same order than in train set
     processed_test_data = processed_test_data[X_metastases.columns]
-    processed_test_data_part_2 = processed_test_data.copy(deep=True)
 
     pred_part_1 = run_predicting_metastases(X_metastases, y_metastases,
                                             processed_test_data)
 
+    final_pred_1 = find_current_pred(test_data, processed_test_data, pred_part_1, id_data)
+
     # Get missing columns in the training test
-    missing_cols = set(X_tumor.columns) - set(processed_test_data_part_2.columns)
+    missing_cols = set(X_tumor.columns) - set(
+        processed_test_data_part_2.columns)
     # Add a missing column in test set with default value equal to 0
     for c in missing_cols:
         processed_test_data_part_2[c] = 0
     # Ensure the order of column in the test set is in the same order than in train set
-    processed_test_data_part_2 = processed_test_data_part_2[X_tumor.columns]
-    pred_part_2 = run_tumor_size_pred(X_tumor, y_tumor, processed_test_data_part_2)
+    processed_test_data_part_2 = processed_test_data_part_2[
+        X_tumor.columns]
+    pred_part_2 = run_tumor_size_pred(X_tumor, y_tumor,
+                                      processed_test_data_part_2)
+
+    final_pred_2 = find_current_pred(test_data, processed_test_data_part_2,
+                                     pred_part_2, id_data)
+
     # feature_evaluation(X[["Age", "Her2", "Basic stage"]], y_tumor)
     # X_train, X_test, y_train, y_test = train_test_split(X_metastases,
     #                                                     y_metastases)
     # pred_part_1 = run_predicting_metastases(X_train, y_train, X_test)
     # print(sklearn.metrics.f1_score(y_test, pred_part_1,average=micro)
-    pd.DataFrame(pred_part_1,
+
+    pd.DataFrame(np.array(final_pred_1),
                  columns=[y_metastases.columns.values[0]]).to_csv(
-        'Mission 2 - Breast Cancer/metastases_predictions_test.csv',
+        'part1/predictions.csv',
         index=False)
     # pd.DataFrame(y_test,
     #          columns=[y_metastases.columns.values[0]]).to_csv(
@@ -490,13 +508,13 @@ if __name__ == '__main__':
 
     # X_train, X_test, y_train, y_test = train_test_split(X_tumor, y_tumor)
     # pred_part_2 = run_tumor_size_pred(X_train, y_train, X_test)
-    pd.DataFrame(pred_part_2,
+    pd.DataFrame(np.array(final_pred_2),
                  columns=[y_tumor.columns.values[0]]).to_csv(
-        'Mission 2 - Breast Cancer/tumor_size_predictions_test.csv',
+        'part2/predictions.csv',
         index=False)
     # pd.DataFrame(y_test,
     #              columns=[y_tumor.columns.values[0]]).to_csv(
     #     'Mission 2 - Breast Cancer/tumor_size_predictions_true.csv',
     #     index=False)
 
-    print("this is me")
+    print("this is us")
